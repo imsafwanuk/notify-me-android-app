@@ -1,0 +1,7 @@
+# use case 1
+---------------
+user creates an alarm time with options of REPEAT, LOCATION, CHANGES WITH DAYLIGHT, ALARM OFF OR ON, TITLE, DESCRIPTIONS/NOTES
+
+# use case 2
+---------------
+each LOCATION can have more than 1 timings
