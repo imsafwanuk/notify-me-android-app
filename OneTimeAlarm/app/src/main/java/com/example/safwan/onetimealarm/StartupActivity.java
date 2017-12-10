@@ -1,35 +1,34 @@
 package com.example.safwan.onetimealarm;
 
-import android.app.ActionBar;
-import android.app.AlarmManager;
+
+import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
-import android.app.PendingIntent;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
-import android.view.Gravity;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
 import android.widget.TableLayout;
 import android.widget.TableRow;
-import android.widget.TextClock;
 import android.widget.TextView;
-import android.widget.Toast;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
+import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 
 public class StartupActivity extends AppCompatActivity {
 
@@ -40,47 +39,48 @@ public class StartupActivity extends AppCompatActivity {
     /** Static Variables**/
     protected static int totalAlarmRows = 0;
     private static boolean isDeleteSet = false;
+    protected static int dialogViewIndex;
+    protected static ArrayList <AlarmDemo> alarmObjList;// = new ArrayList<AlarmDemo>();
 
+    /** Plain Old Variables**/
     FloatingActionButton create_alarm_btn;
     TextView alarm_time_1;
     RelativeLayout startup_relative_layout;
-    Button btn, btn1;
+    Button btn;
     TableLayout alarm_table;
-    Switch cb_switch;
     int cbId = CHECKBOX_ID_START;
 
     private Menu currentMenu;
+    AlarmDemo alarmObj;
 
     /** Intent Request code usage **/
     // code = 1, usage = create new alarm
     // code = 2, usage = edit existing alarm
+    // code = 3, usage = copy an alarm with different time
 
     @Override
     protected void onCreate(final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_startup);
+        System.out.println("on create");
+
         alarm_table = (TableLayout) findViewById(R.id.alarm_table);
-        cb_switch = (Switch) findViewById(R.id.cb_switch);
         create_alarm_btn = (FloatingActionButton) findViewById(R.id.create_alarm_btn);
+
+        loadData();
+        // check for saved alarm objects
+        if(savedInstanceState != null && savedInstanceState.containsKey("alarmObjList")) {
+            System.out.println("saved alarms found!");
+            alarmObjList = savedInstanceState.getParcelableArrayList("alarmObjList");
+            initAlarmTable();
+        }else if(savedInstanceState != null && savedInstanceState.containsKey("save")) {
+            System.out.println("saved found!");
+        }
 
 
         // demo button
         btn = (Button) findViewById(R.id.btn);
-        btn1 = (Button) findViewById(R.id.btn1);
         btn.setOnClickListener(callMe);
-        btn1.setOnClickListener(fuckMe);
-
-
-        // cb_switch onclickListener
-        cb_switch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if(isChecked) {
-//                    setDeleteMenu();
-                } else {
-                }
-            }
-        });
-
 
         create_alarm_btn .setOnClickListener(goToCreateAlarmActivity);
     }
@@ -101,7 +101,29 @@ public class StartupActivity extends AppCompatActivity {
     };
 
 
+    /**
+     * Function: Handles activity for result intents.
+     *           if(code == 1 && OK) Creates alarm valid.
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
+        if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
+            System.out.println("Back to startup from save click.");
+            Bundle returnBundle = data.getExtras();
+            alarmObj = returnBundle.getParcelable("new-alarm");
+            createAlarmRow(alarmObj);
+            alarmObjList.add(alarmObj);
+        }else if (requestCode == 2 && resultCode == Activity.RESULT_OK) {
+            System.out.println("Back to startup from save click, on edit");
+            Bundle returnBundle = data.getExtras();
+            alarmObj = returnBundle.getParcelable("edit-alarm");
+            // edit existing alarm
+//            alarmObjList.set(alarmObjList.indexOf(alarmObj), alarmObj);
+        }else {
+            System.out.println("Back to startup from cancel click.");
+        }
+    }
 
 
     private View.OnClickListener callMe = new View.OnClickListener() {
@@ -109,7 +131,7 @@ public class StartupActivity extends AppCompatActivity {
         @Override
         public void onClick(final View v) {
             System.out.println("Call me ;)");
-            createAlarmRow();
+            createAlarmRow(new AlarmDemo());
         }
     };
 
@@ -129,6 +151,7 @@ public class StartupActivity extends AppCompatActivity {
     }
 
     public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.clear();
 
         if(isDeleteSet) {
             ActivityCompat.invalidateOptionsMenu(StartupActivity.this);
@@ -226,11 +249,13 @@ public class StartupActivity extends AppCompatActivity {
     }
 
 
+
+
     /**
      * Function: Adds a new alarm row with all its neccesary contents.
      * Stimuli: Launches when a new alarm is created. Most probably called from onActivityResult
      */
-    protected void createAlarmRow() {
+    protected void createAlarmRow(AlarmDemo alarmObj) {
 
         // linear vertical layout
         LinearLayout linear_vertical_layout = new LinearLayout(StartupActivity.this);
@@ -243,15 +268,19 @@ public class StartupActivity extends AppCompatActivity {
             tv_time.setLayoutParams(new ViewGroup.LayoutParams(
                 140,
                 40));
-            tv_time.setText(Integer.toString(ALARM_ID_START+totalAlarmRows++));
+            String hr = Integer.toString(alarmObj.getHr());
+            String min = Integer.toString(alarmObj.getMin());
+            String am_pm;
+            if(alarmObj.getAm_pm() == 0)
+                am_pm = "am";
+            else
+                am_pm = "pm";
+            tv_time.setText(hr + ":" + min + " " + am_pm);
             linear_vertical_layout.addView(tv_time,0);
 
             // TextView to display title
             TextView tv_title = new TextView(StartupActivity.this);
-//            tv_title.setLayoutParams(new ViewGroup.LayoutParams(
-//                ViewGroup.LayoutParams.MATCH_PARENT,
-//                ViewGroup.LayoutParams.MATCH_PARENT));
-            tv_title.setText("My title");
+            tv_title.setText(alarmObj.getTitle());
             linear_vertical_layout.addView(tv_title,1);
 
         // linear horizontal layout
@@ -270,11 +299,10 @@ public class StartupActivity extends AppCompatActivity {
             // switch to display on/off
             Switch row_switch = new Switch(StartupActivity.this);
             linear_horizontal_layout.addView(row_switch,1);
+            row_switch.setChecked(alarmObj.isAlarmSet());
 
         //add 2 liner layout to row
         TableRow tr = new TableRow(StartupActivity.this);
-//        TableRow.LayoutParams lp = new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,TableRow.LayoutParams.MATCH_PARENT);
-//        tr.setLayoutParams(lp);
 
         tr.addView(linear_vertical_layout);
         tr.addView(linear_horizontal_layout);
@@ -315,7 +343,7 @@ public class StartupActivity extends AppCompatActivity {
 
 
     /**
-     * Function: When an alarm row is long pressed, this method does the following:
+     * Function: When an delete option is pressed, this method does the following, if alarms are present:
      *              removes on/off alarm switches,
      *              adds delete boxes,
      *              checks the delete box of clicked row,
@@ -323,24 +351,52 @@ public class StartupActivity extends AppCompatActivity {
      *              hide FAB create_alarm_btn,
      * Stimuli: When an alarm row is long pressed.
      */
+    private void setAlarmDeleteView() {
+
+        /** CHECK FOR ALARM 1ST **/
+        if(alarmObj == null)
+            return;
+
+        // removes on/off alarm switches
+        disableOnOffSwitch();
+
+        // hide FAB create_alarm_btn
+        create_alarm_btn.setVisibility(View.INVISIBLE);
+
+        // adds delete boxes
+        addDeleteBoxes();
+
+        // change option menu to give delete option
+        setDeleteMenu(true);
+    }
+
+
+
+
     View.OnLongClickListener alarmRowLongClickListener = new View.OnLongClickListener() {
+
         @Override
         public boolean onLongClick(View view) {
-            // removes on/off alarm switches
-            disableOnOffSwitch();
-
-            // hide FAB create_alarm_btn
-            create_alarm_btn.setVisibility(View.INVISIBLE);
-
-            // adds delete boxes
-            addDeleteBoxes();
-
-            // checks the delete box of clicked row
-            setCheck((TableRow) view);
-
-            // change option menu to give delete option
-            setDeleteMenu(true);
-
+            dialogViewIndex = alarm_table.indexOfChild(view);
+//            AlertDialog.Builder builder = new AlertDialog.Builder(StartupActivity.this, R.style.dialog_light);
+            AlertDialog.Builder builder = new AlertDialog.Builder(StartupActivity.this);
+            builder.setTitle("Options")
+                    .setItems(R.array.planets_array, new DialogInterface.OnClickListener() {
+                        public void onClick(DialogInterface dialog, int itemIndex) {
+                            if(itemIndex == 0) {
+                                // copy alarm with different time
+                                System.out.println("copy dialog");
+                                Intent copyAlarm = new Intent(StartupActivity.this, CreateAlarmActivity.class);
+                                copyAlarm.putExtra("alarmAction", "copy");
+                                startActivityForResult(copyAlarm,3);
+                            }else if(itemIndex == 1) {
+                                // delete the alarm
+                                System.out.println("delete dialog");
+                                removeAlarm(dialogViewIndex);
+                            }
+                        }
+                    });
+            builder.show();
             return true;
         }
     };
@@ -349,6 +405,13 @@ public class StartupActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            case R.id.delete_alarm:
+                System.out.println("delete ops");
+                setAlarmDeleteView();
+                return true;
+            case R.id.settings:
+                System.out.println("settings ops");
+                return true;
             case R.id.action_delete_alarm:
                 performMenuDeleteAction();
                 return true;
@@ -396,6 +459,8 @@ public class StartupActivity extends AppCompatActivity {
 
         // show FAB create_alarm_btn
         create_alarm_btn.setVisibility(View.VISIBLE);
+
+        alarmObj = null;
     }
 
 
@@ -411,98 +476,116 @@ public class StartupActivity extends AppCompatActivity {
 
                 // if checked, then delete row
                 if(cb.isChecked()) {
-                    alarm_table.removeViewAt(i);
+                    removeAlarm(i);
                 }
             }
 
         }
     }
 
-//    @Override
-//    protected void onCreate(final Bundle savedInstanceState) {
-//        super.onCreate(savedInstanceState);
-//        setContentView(R.layout.activity_startup);
-//
-//        alarm_time_1 = (TextView) findViewById(R.id.alarm_time_1);
-//        TableRow alarm_row_1 = (TableRow) findViewById(R.id.alarm_row_1);
-//
-//        create_alarm_btn = (FloatingActionButton) findViewById(R.id.create_alarm_btn);
-//
-//        TableLayout alarm_table = (TableLayout) findViewById(R.id.alarm_table );
-//        alarm_table.setOnLongClickListener(new View.OnLongClickListener() {
-//            @Override
-//            public boolean onLongClick(View view) {
-//                TableLayout alarm_table = (TableLayout) findViewById(R.id.alarm_table);
-////                alarm_table.removeViewAt(0);
-//                CheckBox cb = (CheckBox) findViewById(R.id.checkBox4);
-//                cb.setVisibility(View.INVISIBLE);
-//                CheckBox cb5 = (CheckBox) findViewById(R.id.checkBox5);
-//                cb5.setVisibility(View.INVISIBLE);
-//                CheckBox cb6 = (CheckBox) findViewById(R.id.checkBox6);
-//                cb6.setVisibility(View.INVISIBLE);
-//                return false;
-//            }
-//        });
-//
-//
-//
-//        button6 = (Button) findViewById(R.id.button6);
-//        button6.setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View view) {
-//                onCreateDialog(savedInstanceState).show();
-//                TableLayout alarm_table = (TableLayout) findViewById(R.id.alarm_table);
-//                alarm_table.removeViewAt(0);
-//            }
-//        });
-//
-//
-////        alarm_row_1.setOnLongClickListener(new View.OnLongClickListener() {
-////            @Override
-////            public boolean onLongClick(View view) {
-////
-////                System.out.println( "I have been long clicked");
-////                onCreateDialog(savedInstanceState).show();
-////                System.out.println( alarm_table.getChildCount());
-////                System.out.println("ID:"+alarm_table.getChildAt(0).getId());
-//////                TableRow n = (TableRow)findViewById(R.id.t2);
-//////                alarm_table.removeViewAt(2);
-//////                alarm_table.addView(n,0);
-////                alarm_table.removeViewAt(0);
-//////                alarm_table.removeViewAt(1);
-////                return false;
-////            }
-////        });
-//
-//    }
-////2131230750
-//
-//
-//
-//    public Dialog onCreateDialog(Bundle savedInstanceState) {
-//        // Use the Builder class for convenient dialog construction
-//        AlertDialog.Builder builder = new AlertDialog.Builder(StartupActivity.this);
-//        builder.setMessage("Fire")
-//                .setPositiveButton("Firey", new DialogInterface.OnClickListener() {
-//                    public void onClick(DialogInterface dialog, int id) {
-//                        System.out.println( "ZE MISSILES!");
-//                    }
-//                })
-//                .setNegativeButton("cancel", new DialogInterface.OnClickListener() {
-//                    public void onClick(DialogInterface dialog, int id) {
-//                        System.out.println( "Cancellll");
-//                    }
-//                });
-//        // Create the AlertDialog object and return it
-//        return builder.create();
-//    }
-//
-//
-//
-//
-//    }
-//
-//
+    /**
+     * Function: Responsible for deleting only the alarm, whose index was passed through.
+     * Stimuli: Called when delete options manu is clicked,
+     *          Called when delete options is clicked from long click dialog.
+     */
+    protected void removeAlarm(int alarmIndex) {
+        alarm_table.removeViewAt(alarmIndex);
+        alarmObjList.remove(alarmIndex);
+//        for(AlarmDemo a : alarmObjList) {
+//            System.out.println(a.getHr());
+//        }
+    }
 
+    /**
+     * Function: Sets up the entire alarm table, alarm objects taken from alarmObjList.
+     * Stimuli: Called when activity starts, orientation changes
+     */
+    protected void initAlarmTable() {
+        for(AlarmDemo a : alarmObjList) {
+//            System.out.println();
+            createAlarmRow(a);
+        }
+    }
+
+
+
+
+    @Override
+    public void onSaveInstanceState(Bundle savedInstanceState) {
+        System.out.println("saving instance!");
+        super.onSaveInstanceState(savedInstanceState);
+        // Save UI state changes to the savedInstanceState.
+        // This bundle will be passed to onCreate if the process is
+        // killed and restarted.
+
+        savedInstanceState.putString("save","yes");
+    }
+
+
+    @Override
+    public void onPause(){
+        System.out.println("on pause");
+        Bundle bundle = new Bundle();
+        bundle.putParcelableArrayList("alarmObjList", alarmObjList);
+        onSaveInstanceState(bundle);
+        super.onPause();
+    }
+
+    @Override
+    public void onResume() {
+//        System.out.println("on resume");
+        super.onResume();
+    }
+
+    @Override
+    public void onRestart() {
+//        System.out.println("on Restart");
+        super.onRestart();
+    }
+
+
+    @Override
+    public void onStart() {
+        super.onStart();
+//        System.out.println("on Start");
+    }
+
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        saveData();
+//        System.out.println("on stop");
+    }
+
+    @Override
+    public void onDestroy() {
+//        System.out.println("on destroy");
+        super.onDestroy();
+    }
+
+    private void saveData() {
+        SharedPreferences sharedPref = getSharedPreferences("alarmSharedPreferences ", MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        Gson gson = new Gson();
+        String json = gson.toJson(alarmObjList);
+        editor.putString("alarmObjList", json);
+        editor.commit();
+    }
+//
+    private void loadData() {
+        SharedPreferences sharedPref = getSharedPreferences("alarmSharedPreferences ", MODE_PRIVATE);
+        Gson gson = new Gson();
+        String json = sharedPref.getString("alarmObjList", null);
+        Type type = new TypeToken<ArrayList<AlarmDemo>>(){}.getType();
+        alarmObjList = gson.fromJson(json, type);
+
+        if(alarmObjList == null) {
+            alarmObjList = new ArrayList<AlarmDemo>();
+        }else {
+            initAlarmTable();
+        }
+    }
 
 }
+
