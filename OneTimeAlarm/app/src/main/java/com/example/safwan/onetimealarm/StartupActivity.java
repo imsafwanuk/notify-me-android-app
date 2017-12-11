@@ -28,7 +28,6 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.List;
 
 public class StartupActivity extends AppCompatActivity {
 
@@ -40,7 +39,7 @@ public class StartupActivity extends AppCompatActivity {
     protected static int totalAlarmRows = 0;
     private static boolean isDeleteSet = false;
     protected static int dialogViewIndex;
-    protected static ArrayList <AlarmDemo> alarmObjList;// = new ArrayList<AlarmDemo>();
+    protected static ArrayList <Alarm> alarmObjList;// = new ArrayList<Alarm>();
 
     /** Plain Old Variables**/
     FloatingActionButton create_alarm_btn;
@@ -51,7 +50,7 @@ public class StartupActivity extends AppCompatActivity {
     int cbId = CHECKBOX_ID_START;
 
     private Menu currentMenu;
-    AlarmDemo alarmObj;
+    Alarm alarmObj;
 
     /** Intent Request code usage **/
     // code = 1, usage = create new alarm
@@ -112,8 +111,7 @@ public class StartupActivity extends AppCompatActivity {
             System.out.println("Back to startup from save click.");
             Bundle returnBundle = data.getExtras();
             alarmObj = returnBundle.getParcelable("new-alarm");
-            createAlarmRow(alarmObj);
-            alarmObjList.add(alarmObj);
+            insertAlarm(alarmObj);
         }else if (requestCode == 2 && resultCode == Activity.RESULT_OK) {
             System.out.println("Back to startup from save click, on edit");
             Bundle returnBundle = data.getExtras();
@@ -131,7 +129,18 @@ public class StartupActivity extends AppCompatActivity {
         @Override
         public void onClick(final View v) {
             System.out.println("Call me ;)");
-            createAlarmRow(new AlarmDemo());
+            insertAlarm(new Alarm());
+//            try {
+//                alarmObj = alarmObjList.get(0).clone();
+//                createAlarmRow(alarmObj);
+//                alarmObjList.add(alarmObj);
+//                for(Alarm a : alarmObjList) {
+//                    System.out.println(System.identityHashCode(System.identityHashCode(a)));
+//                }
+//            } catch (CloneNotSupportedException e) {
+//                e.printStackTrace();
+//            }
+
         }
     };
 
@@ -255,7 +264,7 @@ public class StartupActivity extends AppCompatActivity {
      * Function: Adds a new alarm row with all its neccesary contents.
      * Stimuli: Launches when a new alarm is created. Most probably called from onActivityResult
      */
-    protected void createAlarmRow(AlarmDemo alarmObj) {
+    protected void createAlarmRow(Alarm alarmObj) {
 
         // linear vertical layout
         LinearLayout linear_vertical_layout = new LinearLayout(StartupActivity.this);
@@ -268,14 +277,8 @@ public class StartupActivity extends AppCompatActivity {
             tv_time.setLayoutParams(new ViewGroup.LayoutParams(
                 140,
                 40));
-            String hr = Integer.toString(alarmObj.getHr());
-            String min = Integer.toString(alarmObj.getMin());
-            String am_pm;
-            if(alarmObj.getAm_pm() == 0)
-                am_pm = "am";
-            else
-                am_pm = "pm";
-            tv_time.setText(hr + ":" + min + " " + am_pm);
+
+            tv_time.setText(alarmObj.getTimeString());
             linear_vertical_layout.addView(tv_time,0);
 
             // TextView to display title
@@ -354,7 +357,7 @@ public class StartupActivity extends AppCompatActivity {
     private void setAlarmDeleteView() {
 
         /** CHECK FOR ALARM 1ST **/
-        if(alarmObj == null)
+        if(alarmObjList.size() == 0)
             return;
 
         // removes on/off alarm switches
@@ -391,7 +394,7 @@ public class StartupActivity extends AppCompatActivity {
                                 startActivityForResult(copyAlarm,3);
                             }else if(itemIndex == 1) {
                                 // delete the alarm
-                                System.out.println("delete dialog");
+                                System.out.println("delete dialog at index: " + dialogViewIndex);
                                 removeAlarm(dialogViewIndex);
                             }
                         }
@@ -491,7 +494,7 @@ public class StartupActivity extends AppCompatActivity {
     protected void removeAlarm(int alarmIndex) {
         alarm_table.removeViewAt(alarmIndex);
         alarmObjList.remove(alarmIndex);
-//        for(AlarmDemo a : alarmObjList) {
+//        for(Alarm a : alarmObjList) {
 //            System.out.println(a.getHr());
 //        }
     }
@@ -501,7 +504,7 @@ public class StartupActivity extends AppCompatActivity {
      * Stimuli: Called when activity starts, orientation changes
      */
     protected void initAlarmTable() {
-        for(AlarmDemo a : alarmObjList) {
+        for(Alarm a : alarmObjList) {
 //            System.out.println();
             createAlarmRow(a);
         }
@@ -577,15 +580,28 @@ public class StartupActivity extends AppCompatActivity {
         SharedPreferences sharedPref = getSharedPreferences("alarmSharedPreferences ", MODE_PRIVATE);
         Gson gson = new Gson();
         String json = sharedPref.getString("alarmObjList", null);
-        Type type = new TypeToken<ArrayList<AlarmDemo>>(){}.getType();
+        Type type = new TypeToken<ArrayList<Alarm>>(){}.getType();
         alarmObjList = gson.fromJson(json, type);
 
         if(alarmObjList == null) {
-            alarmObjList = new ArrayList<AlarmDemo>();
+            alarmObjList = new ArrayList<Alarm>();
         }else {
             initAlarmTable();
         }
     }
 
+
+    /**
+     * Function: This method will be used to insert a new alarm.
+     *           This method encapsulates the 2 other methods which will help to keep track of
+     *           alarm rows and alarm objects in the app.
+     *           This method invokes the following 2 mthods,
+     *              createAlarmRow(alarmObj)
+     *              alarmObjList.add(alarmObj)
+     */
+    protected void insertAlarm(Alarm obj) {
+        createAlarmRow(obj);
+        alarmObjList.add(obj);
+    }
 }
 

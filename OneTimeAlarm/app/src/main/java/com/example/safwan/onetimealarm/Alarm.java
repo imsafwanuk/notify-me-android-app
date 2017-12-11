@@ -3,8 +3,12 @@ package com.example.safwan.onetimealarm;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.TimeZone;
 
 /**
  * A DEMO CLASS THAT WILL GET OVERWRITTEN BY PROPER OOP DESIGN PATTERN
@@ -13,21 +17,24 @@ import java.util.List;
  */
 
 
-public class AlarmDemo implements Parcelable {
+public class Alarm implements Parcelable, Cloneable {
 
-    public boolean alarmSet;
-    public int hr, min, am_pm;    //0 = am, 1 = pm
-    public boolean changeWithDayLightSavings;
-    public String title, description, location;
-
+    private boolean alarmSet;
+    private int hr, min, am_pm;    //0 = am, 1 = pm
+    private boolean changeWithDayLightSavings;
+    private String title, description, location;
+    private Calendar alarmTime;
 
     public enum days{
         SUN, MON, TUE, WED, THU, FRI, SAT;
     }
+    public enum AM_PM{
+        AM,PM;
+    }
 
     List<days> repeatingDays = new ArrayList<days>();
 
-    AlarmDemo() {
+    Alarm() {
         super();
         alarmSet = true;
         hr = 0;
@@ -37,12 +44,13 @@ public class AlarmDemo implements Parcelable {
         description = "";
         location = "";
         am_pm = 0;
+        alarmTime = new GregorianCalendar();
     }
 
 
     /**Parcelable stuff**/
 
-    AlarmDemo(Parcel parcel) {
+    Alarm(Parcel parcel) {
         alarmSet = (parcel.readInt() == 1 ? true : false);
         hr = parcel.readInt();
         min = parcel.readInt();
@@ -51,6 +59,12 @@ public class AlarmDemo implements Parcelable {
         title = parcel.readString();
         description = parcel.readString();
         location = parcel.readString();
+        // Calendar alarm time obj
+        long milisecs = parcel.readLong();
+        alarmTime = new GregorianCalendar();
+//        String timeZoneId = parcel.readString();
+//        alarmTime = new GregorianCalendar(TimeZone.getTimeZone(timeZoneId));
+        alarmTime.setTimeInMillis(milisecs);
     }
 
     @Override
@@ -69,24 +83,34 @@ public class AlarmDemo implements Parcelable {
         parcel.writeString(title);
         parcel.writeString(description);
         parcel.writeString(location);
+        parcel.writeLong(alarmTime.getTimeInMillis());
+//        parcel.writeString(alarmTime.getTimeZone().getID());
     }
 
 
-    public static final Creator<AlarmDemo> CREATOR = new Creator<AlarmDemo>()
+    public static final Creator<Alarm> CREATOR = new Creator<Alarm>()
     {
         @Override
-        public AlarmDemo createFromParcel(Parcel in)
+        public Alarm createFromParcel(Parcel in)
         {
-            return new AlarmDemo(in);
+            return new Alarm(in);
         }
 
         @Override
-        public AlarmDemo[] newArray(int size)
+        public Alarm[] newArray(int size)
         {
-            return new AlarmDemo[size];
+            return new Alarm[size];
         }
     };
 
+
+    /** Cloneable interface stuff **/
+    @Override
+    protected Alarm clone() throws CloneNotSupportedException {
+        Alarm newAlarm = new Alarm();
+        newAlarm.setAlarmTime(this.alarmTime.get(Calendar.HOUR_OF_DAY),this.getMin());
+        return newAlarm;
+    }
 
     public boolean isAlarmSet() {
         return alarmSet;
@@ -129,29 +153,26 @@ public class AlarmDemo implements Parcelable {
     }
 
     public int getHr() {
-        return hr;
-    }
-
-    public void setHr(int hr) {
-        this.hr = hr;
+        return alarmTime.get(Calendar.HOUR);
     }
 
     public int getMin() {
-        return min;
-    }
-
-    public void setMin(int min) {
-        this.min = min;
+        return alarmTime.get(Calendar.MINUTE);
     }
 
     public int getAm_pm() {
-        return am_pm;
-    }
-
-    public void setAm_pm(int am_pm) {
-        this.am_pm = am_pm;
+        return alarmTime.get(Calendar.AM_PM);
     }
 
 
+    public void setAlarmTime(int nHr, int nMin) {
+        this.alarmTime.set(Calendar.HOUR_OF_DAY, nHr);
+        this.alarmTime.set(Calendar.MINUTE, nMin);
+//        this.alarmTime.setTimeZone(nTimeZone);
+    }
+
+    public String getTimeString() {
+        return new SimpleDateFormat("h:mm a").format(alarmTime.getTime());
+    }
 
 }

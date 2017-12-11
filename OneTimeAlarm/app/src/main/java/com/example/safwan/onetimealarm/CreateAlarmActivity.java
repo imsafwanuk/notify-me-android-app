@@ -1,7 +1,6 @@
 package com.example.safwan.onetimealarm;
 
 import android.annotation.TargetApi;
-import android.app.ActionBar;
 import android.content.Intent;
 import android.os.Build;
 import android.support.v7.app.AppCompatActivity;
@@ -10,7 +9,6 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
@@ -21,7 +19,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
     // repeating days TextView item
     TextView sun, mon, tue, wed, thu, fri, sat;
 
-    AlarmDemo alarmObj;
+    Alarm alarmObj;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,25 +98,19 @@ public class CreateAlarmActivity extends AppCompatActivity {
      */
     private Bundle saveAlarmInstance() {
         Bundle bundleObj = new Bundle();
-        alarmObj = new AlarmDemo();
+        alarmObj = new Alarm();
 
         int[] arr = getAlarmTime();
-
-        if(arr[0] > 12) {
-            arr[0] -= 12;
-            alarmObj.setAm_pm(0);
-        } else {
-            alarmObj.setAm_pm(1);
-        }
-
-        alarmObj.setHr(arr[0]);
-        alarmObj.setMin(arr[1]);
-
+        alarmObj.setAlarmTime(arr[0], arr[1]);
         bundleObj.putParcelable("new-alarm", alarmObj);
         return bundleObj;
     }
 
 
+    /**
+     * Function: Stores the hr and min, in 24hr format in an arr and returns that.
+     * Return: arr[2] where, arr[0] = hr and arr[1] = min.
+     */
     @TargetApi(Build.VERSION_CODES.M)
     private int[] getAlarmTime() {
         int[] arr = new int[2];
