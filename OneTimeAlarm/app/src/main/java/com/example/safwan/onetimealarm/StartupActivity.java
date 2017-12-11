@@ -16,6 +16,7 @@ import android.view.MenuItem;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
@@ -81,7 +82,7 @@ public class StartupActivity extends AppCompatActivity {
         btn = (Button) findViewById(R.id.btn);
         btn.setOnClickListener(callMe);
 
-        create_alarm_btn .setOnClickListener(goToCreateAlarmActivity);
+        create_alarm_btn .setOnClickListener(createNewAlarm);
     }
 
 
@@ -89,13 +90,13 @@ public class StartupActivity extends AppCompatActivity {
      * Function: Creates a new Create Alarm Activity and goes there. Request Code = 1, and waits for result
      * Stimuli: Launches when create_alarm_button is clicked.
      */
-    protected View.OnClickListener goToCreateAlarmActivity = new View.OnClickListener() {
+    protected View.OnClickListener createNewAlarm = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
             System.out.println("Clicked alarm creator");
-            Intent createAlarmIntent = new Intent(StartupActivity.this, CreateAlarmActivity.class);
-            createAlarmIntent.putExtra("alarmAction", "create");
-            startActivityForResult(createAlarmIntent, 1);
+            Intent creatAlarmIntent = new Intent(StartupActivity.this, CreateAlarmActivity.class);
+            creatAlarmIntent.putExtra("alarmAction", "create-alarm");
+            gotoCreateAlarmActivity("createNewAlarm", "create-alarm", creatAlarmIntent);
         }
     };
 
@@ -109,15 +110,31 @@ public class StartupActivity extends AppCompatActivity {
 
         if (requestCode == 1 && resultCode == Activity.RESULT_OK) {
             System.out.println("Back to startup from save click.");
+
             Bundle returnBundle = data.getExtras();
-            alarmObj = returnBundle.getParcelable("new-alarm");
-            insertAlarm(alarmObj);
+            Alarm parceledAlarm = returnBundle.getParcelable("alarm");
+            insertAlarm(parceledAlarm);
+
         }else if (requestCode == 2 && resultCode == Activity.RESULT_OK) {
             System.out.println("Back to startup from save click, on edit");
+
             Bundle returnBundle = data.getExtras();
-            alarmObj = returnBundle.getParcelable("edit-alarm");
+            Alarm parceledAlarm = returnBundle.getParcelable("alarm");
+
             // edit existing alarm
-//            alarmObjList.set(alarmObjList.indexOf(alarmObj), alarmObj);
+            if(data.hasExtra("editIndex")) {
+                int editIndex = data.getIntExtra("editIndex",0);
+                updateAlarm(parceledAlarm, editIndex);
+            }
+
+
+        }else if (requestCode == 3 && resultCode == Activity.RESULT_OK) {
+            System.out.println("Back to startup from save click, on copy");
+
+            Bundle returnBundle = data.getExtras();
+            Alarm parceledAlarm = returnBundle.getParcelable("alarm");
+            insertAlarm(parceledAlarm);
+
         }else {
             System.out.println("Back to startup from cancel click.");
         }
@@ -264,7 +281,7 @@ public class StartupActivity extends AppCompatActivity {
      * Function: Adds a new alarm row with all its neccesary contents.
      * Stimuli: Launches when a new alarm is created. Most probably called from onActivityResult
      */
-    protected void createAlarmRow(Alarm alarmObj) {
+    protected TableRow createAlarmRow(Alarm alarmObj) {
 
         // linear vertical layout
         LinearLayout linear_vertical_layout = new LinearLayout(StartupActivity.this);
@@ -301,8 +318,23 @@ public class StartupActivity extends AppCompatActivity {
         
             // switch to display on/off
             Switch row_switch = new Switch(StartupActivity.this);
+
+            row_switch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                @Override
+                public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
+                    Switch s = (Switch) compoundButton;
+                    LinearLayout tempL =  (LinearLayout) s.getParent();
+                    TableRow tempRow = (TableRow) tempL.getParent();
+                    int switchIndex = alarm_table.indexOfChild(tempRow);
+                    if(switchIndex >= 0) {
+                        System.out.println("ALarm: " + alarm_table.indexOfChild(tempRow));
+                        alarmObjList.get(switchIndex).setAlarmSet(isChecked);
+                    }
+                }
+            });
             linear_horizontal_layout.addView(row_switch,1);
             row_switch.setChecked(alarmObj.isAlarmSet());
+
 
         //add 2 liner layout to row
         TableRow tr = new TableRow(StartupActivity.this);
@@ -316,30 +348,33 @@ public class StartupActivity extends AppCompatActivity {
         tr.setOnLongClickListener(alarmRowLongClickListener);
 
         // add table row to alarm table
-        alarm_table.addView(tr);
-        System.out.println("Row added");
+        return tr;
     }
 
     /**
-     * Function: When an alarm row is long pressed, this method does the following:
-     *              removes on/off alarm switches,
-     *              adds delete boxes,
-     *              checks the delete box of clicked row,
-     *              change option menu to give delete option,
-     *              hide FAB create_alarm_btn,
-     * Stimuli: When an alarm row is long pressed.
+     * Function: If isDeleteSet == true, then the clicked row gets checked for delete,
+     *           Else, goes to create alarm activity to be edited.
+     * Stimuli: When an alarm row is clicked.
      */
     View.OnClickListener alarmRowClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
             System.out.println("D: "+isDeleteSet);
+
             if(isDeleteSet) {
                 setCheck((TableRow) view);
             }else {
                 // go to new activity
                 Intent editAlarmIntent = new Intent(StartupActivity.this, CreateAlarmActivity.class);
-                editAlarmIntent.putExtra("alarmAction","edit");
-                startActivityForResult(editAlarmIntent, 2);
+                editAlarmIntent.putExtra("alarmAction","edit-alarm");
+                editAlarmIntent.putExtra("editIndex", alarm_table.indexOfChild(view));
+
+                // get alarm and put it in bundle, and put bundle in intent
+                Bundle bundleObj = new Bundle();
+                bundleObj.putParcelable("editing-alarm", alarmObjList.get(alarm_table.indexOfChild(view)));
+                editAlarmIntent.putExtras(bundleObj);
+
+                gotoCreateAlarmActivity("alarmRowClickListener", "edit-alarm", editAlarmIntent);
             }
         }
     };
@@ -389,9 +424,18 @@ public class StartupActivity extends AppCompatActivity {
                             if(itemIndex == 0) {
                                 // copy alarm with different time
                                 System.out.println("copy dialog");
-                                Intent copyAlarm = new Intent(StartupActivity.this, CreateAlarmActivity.class);
-                                copyAlarm.putExtra("alarmAction", "copy");
-                                startActivityForResult(copyAlarm,3);
+
+                                // create alarm object bundle for copy alarm
+                                Bundle bundleObj = new Bundle();
+                                bundleObj.putParcelable("copying-alarm", alarmObjList.get(dialogViewIndex));
+
+                                // create intent and put bundle in
+                                Intent copyAlarmIntent = new Intent(StartupActivity.this, CreateAlarmActivity.class);
+                                copyAlarmIntent.putExtra("alarmAction", "copy-alarm");
+                                copyAlarmIntent.putExtras(bundleObj);
+
+                                gotoCreateAlarmActivity("alarmRowLongClickListener", "copy-alarm", copyAlarmIntent);
+
                             }else if(itemIndex == 1) {
                                 // delete the alarm
                                 System.out.println("delete dialog at index: " + dialogViewIndex);
@@ -506,9 +550,11 @@ public class StartupActivity extends AppCompatActivity {
     protected void initAlarmTable() {
         for(Alarm a : alarmObjList) {
 //            System.out.println();
-            createAlarmRow(a);
+            alarm_table.addView(createAlarmRow(a));
+            System.out.println("Row added");
         }
     }
+
 
 
 
@@ -600,8 +646,50 @@ public class StartupActivity extends AppCompatActivity {
      *              alarmObjList.add(alarmObj)
      */
     protected void insertAlarm(Alarm obj) {
-        createAlarmRow(obj);
+        alarm_table.addView(createAlarmRow(obj));
+        System.out.println("Row added");
         alarmObjList.add(obj);
     }
+
+    protected void updateAlarm(Alarm obj, int index) {
+        alarmObjList.set(index, obj);
+        updateAlarmRow(createAlarmRow(obj), index);
+    }
+
+    protected void updateAlarmRow(TableRow tr, int index) {
+        alarm_table.removeViewAt(index);
+        alarm_table.addView(tr,index);
+        System.out.println("Row edited!");
+    }
+
+
+    /**
+     * Function: This is the method where all activity change from this current to CreateAlarmActivity will take place.
+     * Stimuli: Will be called from different parts of this activity when needed.
+     * Parameters: methodName: String   // will tell from which method an intent is requested from.
+     *             ops: String          // will tell why it wants to switch activity.
+     */
+    private void gotoCreateAlarmActivity(String methodName, String ops, Intent i) {
+        System.out.printf("Intent change requested by: %s \n",methodName);
+
+
+        switch(ops) {
+            case "create-alarm":
+                startActivityForResult(i, 1);
+                break;
+
+            case "edit-alarm":
+                startActivityForResult(i, 2);
+                break;
+
+            case "copy-alarm":
+                startActivityForResult(i, 3);
+                break;
+
+            default:
+                System.out.printf("Ops '%s' not supported in '%s' method \n",ops, "gotoCreateAlarmActivity");
+        }
+    }
+
 }
 

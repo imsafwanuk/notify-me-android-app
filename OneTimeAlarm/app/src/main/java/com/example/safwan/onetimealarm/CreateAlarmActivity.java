@@ -9,6 +9,8 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
@@ -18,8 +20,11 @@ public class CreateAlarmActivity extends AppCompatActivity {
     Menu currentMenu;
     // repeating days TextView item
     TextView sun, mon, tue, wed, thu, fri, sat;
-
+    TimePicker timePicker;
     Alarm alarmObj;
+    EditText et_location, et_title, et_description;
+    Switch switch_dayLight;
+    Intent globalReceiveIntent;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -35,18 +40,41 @@ public class CreateAlarmActivity extends AppCompatActivity {
         mActionBar.setDisplayShowCustomEnabled(true);
 
 
-        // onclick of cancel and save
+        timePicker = (TimePicker) findViewById(R.id.timePicker);
+        et_title = (EditText) findViewById(R.id.et_title);
+        et_location = (EditText) findViewById(R.id.et_location);
+        et_description = (EditText) findViewById(R.id.et_description);
+        switch_dayLight = (Switch) findViewById(R.id.switch_dayLight);
 
 
 
         /**Get intent and deal with it accordingly**/
-        Intent i = getIntent();
-        if(i.getStringExtra("alarmAction").equals("create")) {
+        globalReceiveIntent = getIntent();
+
+        if(globalReceiveIntent.getStringExtra("alarmAction").equals("create-alarm")) {
             System.out.println("create new alarm");
-        } else if(i.getStringExtra("alarmAction").equals("edit")) {
-            System.out.println("edit existing alarm");
-        } else if(i.getStringExtra("alarmAction").equals("copy")) {
+
+        } else if(globalReceiveIntent.getStringExtra("alarmAction").equals("edit-alarm")) {
+            int editIndex =  globalReceiveIntent.getIntExtra("editIndex",-1);
+            System.out.println("edit existing alarm of index: " + editIndex);
+
+            Bundle returnBundle = globalReceiveIntent.getExtras();
+            Alarm a = returnBundle.getParcelable("editing-alarm");
+            setUpSameAlarmView(a);
+
+        } else if(globalReceiveIntent.getStringExtra("alarmAction").equals("copy-alarm")) {
             System.out.println("copy existing alarm with different time");
+
+            Bundle returnBundle = globalReceiveIntent.getExtras();
+            Alarm a = returnBundle.getParcelable("copying-alarm");
+
+            // clone alarm (can just use the alarm from return bundle, but im implementing prototype pattern)
+            try {
+                setUpSameAlarmView(a.clone());
+            } catch (CloneNotSupportedException e) {
+                e.printStackTrace();
+            }
+
         }else {
             System.out.println("default call to new activity.");
         }
@@ -80,8 +108,15 @@ public class CreateAlarmActivity extends AppCompatActivity {
                 System.out.println("Clicked saved");
                 Intent saveIntent = new Intent();
 
+                // create alarm instance and bundle it
                 Bundle bundleObj = saveAlarmInstance();
                 saveIntent.putExtras(bundleObj);
+
+                // if edit alarm
+                if(globalReceiveIntent.hasExtra("editIndex")) {
+                    int editIndex = globalReceiveIntent.getIntExtra("editIndex",-1);
+                    saveIntent.putExtra("editIndex", editIndex);
+                }
 
                 setResult(RESULT_OK, saveIntent);
                 finish();
@@ -102,7 +137,12 @@ public class CreateAlarmActivity extends AppCompatActivity {
 
         int[] arr = getAlarmTime();
         alarmObj.setAlarmTime(arr[0], arr[1]);
-        bundleObj.putParcelable("new-alarm", alarmObj);
+        alarmObj.setTitle(et_title.getText().toString());
+        alarmObj.setDescription(et_description.getText().toString());
+        alarmObj.setLocation(et_location.getText().toString());
+        alarmObj.setChangeWithDayLightSavings(switch_dayLight.isChecked());
+
+        bundleObj.putParcelable("alarm", alarmObj);
         return bundleObj;
     }
 
@@ -162,5 +202,30 @@ public class CreateAlarmActivity extends AppCompatActivity {
         }
     };
 
+
+    /**
+     * Function: Ensures all the relevant fields in view have same contents as alarm passed to it.
+     * Parameter: obj: Alarm
+     * Stimuli: launches when copy-alarm or edit-alarm intent is given to this activity
+     */
+    @TargetApi(Build.VERSION_CODES.M)
+    private void setUpSameAlarmView(Alarm obj) {
+        // timer
+        timePicker.setHour(obj.getHrOfDay());
+        timePicker.setMinute(obj.getMin());
+
+
+        // title
+        et_title.setText(obj.getTitle());
+
+        // location
+        et_location.setText(obj.getLocation());
+
+        // description
+        et_description.setText(obj.getDescription());
+
+        // change with day light
+        switch_dayLight.setChecked(obj.isChangeWithDayLightSavings());
+    }
 
 }

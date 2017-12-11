@@ -155,6 +155,9 @@ public class Alarm implements Parcelable, Cloneable {
     public int getHr() {
         return alarmTime.get(Calendar.HOUR);
     }
+    public int getHrOfDay() {
+        return alarmTime.get(Calendar.HOUR_OF_DAY);
+    }
 
     public int getMin() {
         return alarmTime.get(Calendar.MINUTE);
