@@ -29,6 +29,7 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class StartupActivity extends AppCompatActivity {
 
@@ -46,7 +47,7 @@ public class StartupActivity extends AppCompatActivity {
     FloatingActionButton create_alarm_btn;
     TextView alarm_time_1;
     RelativeLayout startup_relative_layout;
-    Button btn;
+    Button chgbtn;
     TableLayout alarm_table;
     int cbId = CHECKBOX_ID_START;
 
@@ -64,6 +65,9 @@ public class StartupActivity extends AppCompatActivity {
         setContentView(R.layout.activity_startup);
         System.out.println("on create");
 
+        //
+
+
         alarm_table = (TableLayout) findViewById(R.id.alarm_table);
         create_alarm_btn = (FloatingActionButton) findViewById(R.id.create_alarm_btn);
 
@@ -79,10 +83,12 @@ public class StartupActivity extends AppCompatActivity {
 
 
         // demo button
-        btn = (Button) findViewById(R.id.btn);
-        btn.setOnClickListener(callMe);
+        chgbtn = (Button) findViewById(R.id.chngbtn);
+        chgbtn.setOnClickListener(callMe);
 
         create_alarm_btn .setOnClickListener(createNewAlarm);
+
+        callMe();
     }
 
 
@@ -141,12 +147,27 @@ public class StartupActivity extends AppCompatActivity {
     }
 
 
+    private void callMe() {
+
+            System.out.println("Call me ;)");
+            createLocationGroup();
+            getAllLocation();
+            Intent i = new Intent(StartupActivity.this, GroupViewActivity.class);
+            i.putExtra("hashmap", locationMap);
+            startActivity(i);
+    }
+
     private View.OnClickListener callMe = new View.OnClickListener() {
 
         @Override
         public void onClick(final View v) {
             System.out.println("Call me ;)");
-            insertAlarm(new Alarm());
+            createLocationGroup();
+            getAllLocation();
+            Intent i = new Intent(StartupActivity.this, GroupViewActivity.class);
+            i.putExtra("hashmap",locationMap);
+            startActivity(i);
+//            insertAlarm(new Alarm());
 //            try {
 //                alarmObj = alarmObjList.get(0).clone();
 //                createAlarmRow(alarmObj);
@@ -285,9 +306,8 @@ public class StartupActivity extends AppCompatActivity {
 
         // linear vertical layout
         LinearLayout linear_vertical_layout = new LinearLayout(StartupActivity.this);
-//        linear_vertical_layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         linear_vertical_layout.setOrientation(LinearLayout.VERTICAL);
-//        linear_vertical_layout.setGravity(Gravity.LEFT);
+
 
             // TextView to display time
             TextView tv_time = new TextView(StartupActivity.this);
@@ -688,6 +708,36 @@ public class StartupActivity extends AppCompatActivity {
 
             default:
                 System.out.printf("Ops '%s' not supported in '%s' method \n",ops, "gotoCreateAlarmActivity");
+        }
+    }
+
+
+    HashMap<String, ArrayList> locationMap;
+    private void createLocationGroup() {
+        locationMap = new HashMap<String, ArrayList>();
+        for(Alarm a : alarmObjList) {
+            String location = a.getLocation();
+            System.out.println("Loca: " + location);
+            if(!location.isEmpty() && !locationMap.containsKey(location)) {
+                locationMap.put(location,new ArrayList<Alarm>());
+            }
+
+            ArrayList<Alarm> arr = locationMap.get(location);
+            if(arr != null && !arr.contains(a))
+                arr.add(a);
+        }
+    }
+
+    private void getAllLocation() {
+        System.out.println("In get loca");
+
+
+        for(String s : locationMap.keySet()) {
+            System.out.println(s);
+            ArrayList<Alarm> arr = locationMap.get(s);
+            for(Alarm a : arr) {
+                System.out.println(a.getTimeString());
+            }
         }
     }
 
