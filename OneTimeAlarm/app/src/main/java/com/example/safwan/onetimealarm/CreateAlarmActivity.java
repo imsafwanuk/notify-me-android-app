@@ -71,6 +71,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
             // clone alarm (can just use the alarm from return bundle, but im implementing prototype pattern)
             try {
                 setUpSameAlarmView(a.clone());
+                System.out.println("cloned existing alarm");
             } catch (CloneNotSupportedException e) {
                 e.printStackTrace();
             }
@@ -118,6 +119,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
                     saveIntent.putExtra("editIndex", editIndex);
                 }
 
+                saveIntent.putExtra("check", "has");
                 setResult(RESULT_OK, saveIntent);
                 finish();
             }
@@ -217,6 +219,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
 
         // title
         et_title.setText(obj.getTitle());
+        System.out.println("Title: "+obj.getTitle());
 
         // location
         et_location.setText(obj.getLocation());

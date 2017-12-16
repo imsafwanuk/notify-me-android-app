@@ -24,8 +24,6 @@
             android:name=".CreateAlarmActivity"
             android:label="@string/emptyString"
             android:theme="@style/AlarmActionTheme"></activity>
-        <activity android:name=".GroupViewActivity"
-            android:theme="@style/Theme.AppCompat.Light"></activity>
     </application>
 
 </manifest>
