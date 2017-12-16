@@ -106,10 +106,8 @@ public class Alarm implements Parcelable, Cloneable {
 
     /** Cloneable interface stuff **/
     @Override
-    protected Alarm clone() throws CloneNotSupportedException {
-        Alarm newAlarm = new Alarm();
-        newAlarm.setAlarmTime(this.alarmTime.get(Calendar.HOUR_OF_DAY),this.getMin());
-        return newAlarm;
+    public Alarm clone() throws CloneNotSupportedException {
+        return (Alarm) super.clone();
     }
 
     public boolean isAlarmSet() {
