@@ -1,4 +1,6 @@
-work with timezones
+work with timezones, changing time, intent-filter timezone and time change
+have to consider all situations regarding time, ways users will get into 1 fragment, activity,etc -> limit ways, dont allow users to create their own by pass method.
 deconstructors in java
 efficient search of unique id's = static queue to hold free ids
 object pooling pattern to limit creation of objects (not implemented yet)
+

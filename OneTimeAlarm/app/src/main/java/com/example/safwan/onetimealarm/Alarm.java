@@ -32,10 +32,7 @@ public class Alarm implements Parcelable, Cloneable {
     public static final int instanceLimit = 100;
     private static Queue<Integer> alarmIdQ = new LinkedList<Integer>();
     private int alarmId;
-    private TimeZone timeZone;
-
-
-    private boolean onDstTime;
+    private boolean onDstTime;  // will be true if time was saved while DST was on, otherwise false.
 
     int[] alarmDaysList;
 
@@ -199,6 +196,7 @@ public class Alarm implements Parcelable, Cloneable {
     public int getHr() {
         return alarmTime.get(Calendar.HOUR);
     }
+
     public int getHrOfDay() {
         return alarmTime.get(Calendar.HOUR_OF_DAY);
     }
@@ -209,6 +207,10 @@ public class Alarm implements Parcelable, Cloneable {
 
     public int getAm_pm() {
         return alarmTime.get(Calendar.AM_PM);
+    }
+
+    public int getDayOfWeek() {
+        return alarmTime.get(Calendar.DAY_OF_WEEK);
     }
 
 
@@ -308,5 +310,6 @@ public class Alarm implements Parcelable, Cloneable {
         this.setOnDstTime();
 //        this.alarmTime.setTimeZone(tz.getID());
     }
+
 
 }

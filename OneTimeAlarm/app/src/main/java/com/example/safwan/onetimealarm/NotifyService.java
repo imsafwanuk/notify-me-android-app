@@ -11,8 +11,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
+import android.icu.text.SimpleDateFormat;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v4.app.NotificationCompat;
 import android.widget.Toast;
 
@@ -22,21 +24,26 @@ import java.util.TimeZone;
 
 public class NotifyService extends BroadcastReceiver {
 
+        public static final boolean SYSTEM_TIME_UPDATE = true;
+        public static final boolean APP_TIME_UPDATE = false;
+
         private final static int ID_INCREMENT_VAL = 1000;
         Context mainAlarmContext;
-        private static Alarm[] notifyServiceAlarms = new Alarm[2];
+        private static Alarm[] notifyServiceAlarms = new Alarm[100];
 
         @Override
         public void onReceive(Context context, Intent intent) {
 
-           /* if( !intent.hasExtra("id") && intent.getAction().equals(Intent.ACTION_TIMEZONE_CHANGED) ) {
-                Intent checkDstIntent = new Intent(context, MainAlarmFragment.class);
-                checkDstIntent.setAction(Intent.ACTION_TIMEZONE_CHANGED);
-                System.out.println("TIMEZONE changed");
-                if( mainAlarmContext != null)
-                    mainAlarmContext.startActivity(checkDstIntent);
+            if(intent.getAction() != null && ( intent.getAction().equals(Intent.ACTION_TIMEZONE_CHANGED) || intent.getAction().equals(Intent.ACTION_TIME_CHANGED) )) {
+                if(intent.getAction().equals(Intent.ACTION_TIMEZONE_CHANGED))
+                    System.out.println("TIMEZONE changed " + context);
+                else if(intent.getAction().equals(Intent.ACTION_TIME_CHANGED))
+                    System.out.println("TIME set " + context);
+
+                if(context != null)
+                    resetAllAlarms(context);
                 return;
-            }*/
+            }
 
 //            System.out.println(intent);
             // get unique alarm id
@@ -93,13 +100,20 @@ public class NotifyService extends BroadcastReceiver {
 
 
 
-    public void setAlarm(Context context, int id, Bundle bundle)
+    public void setAlarm(Context context, int id, Bundle bundle, boolean isFromSystem)
     {
-        /** demo starts **/
+        Alarm alarmObj = bundle.getParcelable("alarmObj");
 
+        /** demo starts **/
+        if( !isFromSystem ) {
+            Parcelable[] p =  bundle.getParcelableArray("alarm-array");
+            for (int i = 0; i < p.length; i++ ) {
+                notifyServiceAlarms[i] = (Alarm) p[i];
+            }
+        }
 
         /** demo ends **/
-        
+
         // set main alarm context for future use in DST calculations
         mainAlarmContext = context;
 
@@ -110,7 +124,6 @@ public class NotifyService extends BroadcastReceiver {
 
 
         // create new fresh, alarms
-        Alarm alarmObj = bundle.getParcelable("alarmObj");
         Intent notifyIntent = new Intent(context,NotifyService.class);
         notifyIntent.putExtra("id", id);
         notifyIntent.putExtras(bundle);
@@ -118,21 +131,25 @@ public class NotifyService extends BroadcastReceiver {
 
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         Calendar ca = Calendar.getInstance();
-        ca.setTimeInMillis(alarmObj.getTimeMillis());
-        //dstOn(alarmObj);
+        ca.set(Calendar.HOUR_OF_DAY, alarmObj.getHrOfDay());
+        ca.set(Calendar.MINUTE, alarmObj.getMin());
+        ca.set(Calendar.DAY_OF_WEEK, alarmObj.getDayOfWeek());
+
+
 
         // if not on repeat, set one alarm.
         if( !alarmObj.isOnRepeat() ) {
             // if given time is less than current time then add
-            if(alarmObj.getTimeMillis() < System.currentTimeMillis()) {
-                ca.setTimeInMillis( alarmObj.getTimeMillis() + 86400000L);
+            if(ca.getTimeInMillis() < System.currentTimeMillis()) {
+                ca.setTimeInMillis( ca.getTimeInMillis() + 86400000L);
             }
 
-            System.out.printf("Alarm being set for id: %d at time %s\n" +
-                    "title: %s, description: %s, location: %s\n", id, alarmObj.getTimeString(), alarmObj.getTitle(), alarmObj.getDescription(), alarmObj.getLocation());
+            long addedMillis = ca.getTimeInMillis() - System.currentTimeMillis();
+            System.out.printf("Once Alarm being set for id: %d at time %s, interval: %d\n", id , alarmObj.getTimeString(), addedMillis);
+            System.out.println( new java.text.SimpleDateFormat("h:mm a E,  dd-MM-yyyy").format(ca.getTime()));
 
             PendingIntent pendingIntent = PendingIntent.getBroadcast (context, id, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-            alarmManager.set(AlarmManager.RTC_WAKEUP,  ca.getTimeInMillis(), pendingIntent);
+            alarmManager.set(AlarmManager.RTC_WAKEUP,  System.currentTimeMillis() + addedMillis, pendingIntent);
 
         }else {
 
@@ -140,12 +157,16 @@ public class NotifyService extends BroadcastReceiver {
                 if(alarmObj.alarmDaysList[i] == 1) {
                     ca.set(Calendar.DAY_OF_WEEK, i+1);
 
-                    int repeatId = id+ca.get(Calendar.DAY_OF_WEEK); // must be called after calendar day of week is set
-                    System.out.printf("Rep Alarm being set for id: %d at time %s\n" +
-                            "title: %s, description: %s, location: %s\n", repeatId , alarmObj.getTimeString(), alarmObj.getTitle(), alarmObj.getDescription(), alarmObj.getLocation());
+                    long addedMillis = ca.getTimeInMillis() - System.currentTimeMillis();
+                    if(addedMillis < 0)
+                        addedMillis += 604800000L;
 
+
+
+                    int repeatId = id+ca.get(Calendar.DAY_OF_WEEK); // must be called after calendar day of week is set
+                    System.out.printf("Rep Alarm being set for id: %d at time %s, interval: %d\n", repeatId , alarmObj.getTimeString(), addedMillis );
                     PendingIntent pendingIntent = PendingIntent.getBroadcast (context, repeatId , notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-                    alarmManager.setRepeating(AlarmManager.RTC_WAKEUP,  ca.getTimeInMillis(), AlarmManager.INTERVAL_DAY * 7 , pendingIntent);
+                    alarmManager.setRepeating(AlarmManager.RTC_WAKEUP,  System.currentTimeMillis() + addedMillis , AlarmManager.INTERVAL_DAY * 7 , pendingIntent);
                 }
             }
         }
@@ -169,15 +190,17 @@ public class NotifyService extends BroadcastReceiver {
 
 
 
-    public void dstOn(Alarm alarmObj) {
-        Calendar ca = Calendar.getInstance();
-        ca.setTimeInMillis(alarmObj.getTimeMillis());
-        TimeZone timeZone = ca.getTimeZone();
 
-        System.out.println(timeZone.inDaylightTime(ca.getTime()));
+
+    private void resetAllAlarms(Context context) {
+        for( Alarm a : notifyServiceAlarms ) {
+            if( a != null) {
+                System.out.println(a.getTimeString());
+                Bundle bundle = new Bundle();
+                bundle.putParcelable("alarmObj", a);
+                setAlarm(context, a.getAlarmId(), bundle, NotifyService.SYSTEM_TIME_UPDATE);
+            }
+        }
     }
-
-
-
 
 }

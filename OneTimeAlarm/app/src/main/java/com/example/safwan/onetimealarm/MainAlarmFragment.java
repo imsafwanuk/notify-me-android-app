@@ -433,7 +433,8 @@ public class MainAlarmFragment extends Fragment {
                 Bundle bundle = new Bundle();
 //                    bundle.putParcelable("alarmObj", alarmObjList.get(switchIndex));
                 bundle.putParcelable("alarmObj", alarmObj);
-                mainNS.setAlarm(mainAlarmActivity, alarmObj.getAlarmId(), bundle);
+                bundle.putParcelableArray("alarm-array", alarmObjList);
+                mainNS.setAlarm(mainAlarmActivity, alarmObj.getAlarmId(), bundle, NotifyService.APP_TIME_UPDATE);
             } else {
                 mainNS.deleteAllAlarmFor(mainAlarmActivity, alarmObj.getAlarmId());
             }
