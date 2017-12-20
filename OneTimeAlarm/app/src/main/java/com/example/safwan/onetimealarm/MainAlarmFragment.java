@@ -1,14 +1,10 @@
 package com.example.safwan.onetimealarm;
 
-import android.app.ActionBar;
 import android.app.Activity;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.location.Address;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -21,7 +17,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.CheckBox;
-import android.widget.CompoundButton;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.Switch;
@@ -35,12 +30,7 @@ import com.google.gson.reflect.TypeToken;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.HashMap;
-import java.util.TimeZone;
-
-import static android.content.Context.ALARM_SERVICE;
-import static android.content.Context.MODE_PRIVATE;
 
 /**
  * Created by safwan on 14/12/2017.
@@ -49,34 +39,21 @@ import static android.content.Context.MODE_PRIVATE;
 public class MainAlarmFragment extends Fragment {
 
 /** Final Variables**/
-
-    final static int ALARM_ID_START = 2000;
-    final static int CHECKBOX_ID_START = 1000;
-    final static NotifyService mainNS = new NotifyService();
-
+    final static NotifyService notifyServiceManager = new NotifyService();  // for all alarm and notification requests
 
 /** Static Variables**/
-
-    private static boolean isDeleteSet = false;
-    protected static int totalAlarmRows = 0;
-    protected static int dialogViewIndex;
-//    protected static ArrayList<Alarm> alarmObjList;// = new ArrayList<Alarm>();
-    protected static Alarm[] alarmObjList = new Alarm [100];
+    private static boolean isDeleteSet = false; //if actionbar shows only delete on top right, then this is true. else false
+    protected static int dialogViewIndex;   // a var that passes index of TableRow that was long pressed to launch a dialog box.
+    protected static Alarm[] alarmObjList = new Alarm [Alarm.INSTANCE_LIMIT];    // holds n fixed number of alarms
     private static View thisView;
     private static Activity mainAlarmActivity;
 
 /** Plain Old Variables**/
-
-    HashMap<String, ArrayList> locationMap;
-    FloatingActionButton create_alarm_btn;
-    TextView alarm_time_1;
-    RelativeLayout startup_relative_layout;
-    Button chgbtn;
-    TableLayout alarm_table;
-    int cbId = CHECKBOX_ID_START;
-
-    private Menu currentMenu;
-    Alarm alarmObj;
+    HashMap<String, ArrayList> locationMap;     // a location name maps to an array of alarms, with same location.
+    FloatingActionButton create_alarm_btn;      // FAB with a + sign
+    Button chgbtn;                              // temp btn that deletes all table rows and alarm objects from list.
+    TableLayout alarm_table;                    // Table layout ref in main alarm fragment.
+    Alarm alarmObj;                             // not sure if i need this :p
 
 
     /** Intent Request code usage **/
@@ -86,21 +63,18 @@ public class MainAlarmFragment extends Fragment {
     // code = 3, usage = copy an alarm with different time
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                             Bundle savedInstanceState) {
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         // Inflate the layout for this fragment
         thisView = (View) inflater.inflate(R.layout.fragment_main_alarm, container, false);
         alarm_table = (TableLayout) thisView.findViewById(R.id.alarm_table);
-        System.out.println("Null  Alarm Table " + alarm_table);
 
-        System.out.println("View is: "+ mainAlarmActivity);
         loadData();
+
         // check for saved alarm objects
         if(savedInstanceState != null && savedInstanceState.containsKey("alarmObjList")) {
             System.out.println("saved alarms found!F");
-//            alarmObjList = savedInstanceState.getParcelableArray("alarmObjList");
             Parcelable[] parcels = savedInstanceState.getParcelableArray("alarmObjList");
-                for ( int i=0; i < 100; i++ ){
+                for ( int i=0; i < parcels.length; i++ ){
                     alarmObjList[i] = (Alarm) parcels[i];
                 }
 
@@ -112,50 +86,38 @@ public class MainAlarmFragment extends Fragment {
             System.out.println("No save found!");
         }
 
-        // dst stuff
-        if( getActivity().getIntent().getAction().equals(Intent.ACTION_TIMEZONE_CHANGED) ) {
-            System.out.println("Calling checkDST from main fraggie");
-            checkDstAlarms();
-        }
-
-
         // init add button
         create_alarm_btn = (FloatingActionButton) thisView.findViewById(R.id.create_alarm_btn);
-        create_alarm_btn .setOnClickListener(createNewAlarm);
+        create_alarm_btn.setOnClickListener(createNewAlarm);
 
         // demo button
         chgbtn = (Button) thisView.findViewById(R.id.chngbtn);
         chgbtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Alarm[] n = new Alarm[100];
-                alarmObjList = Arrays.copyOf(n, 100);
+                Alarm[] n = new Alarm[Alarm.INSTANCE_LIMIT];
+                alarmObjList = Arrays.copyOf(n, n.length);
                 alarm_table.removeAllViews();
-//                Alarm.showCurrentQ();
             }
         });
 
         create_alarm_btn .setOnClickListener(createNewAlarm);
-
-//        callMe();
-
         return thisView;
     }
 
 
 
     /**
-     * Function: Sets up the entire alarm table, alarm objects taken from alarmObjList.
+     * Function: Sets up the entire alarm table. Each alarm objects are taken from alarmObjList.
      * Stimuli: Called when activity starts, orientation changes
      */
-
     protected void initAlarmTable() {
         for(Alarm a : alarmObjList) {
             if(a != null) {
                 a.removeIdFromQ();
                 TableRow tr = createAlarmRow(a);
                 alarm_table.addView(tr);
-                System.out.println("Row added back");
+//                System.out.println("Row added back");
             }
         }
     }
@@ -165,32 +127,36 @@ public class MainAlarmFragment extends Fragment {
     public void onSaveInstanceState(Bundle savedInstanceState) {
         System.out.println("saving instance!");
         super.onSaveInstanceState(savedInstanceState);
-        // Save UI state changes to the savedInstanceState.
-        // This bundle will be passed to onCreate if the process is
-        // killed and restarted.
-
         savedInstanceState.putString("save","yes");
     }
 
+
+    /**
+     * Function: Save alarm list when app paused.
+     */
     @Override
     public void onPause(){
         System.out.println("on pause");
         Bundle bundle = new Bundle();
-//        bundle.putParcelableArrayList("alarmObjList", alarmObjList);
         bundle.putParcelableArray("alarmObjList", alarmObjList);
         onSaveInstanceState(bundle);
         super.onPause();
     }
 
 
+    /**
+     * Function: Save alarm list in device storage when app stopped.
+     */
     @Override
     public void onStop() {
         super.onStop();
         saveData();
-//        System.out.println("on stop");
     }
 
 
+    /**
+     * Function: Saves alarm objects in alarm object list in Json data.
+     */
     private void saveData() {
         SharedPreferences sharedPref = mainAlarmActivity.getSharedPreferences("alarmSharedPreferences ", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
@@ -200,16 +166,19 @@ public class MainAlarmFragment extends Fragment {
         editor.commit();
     }
 
+    /**
+     * Function: Load alarm objects from alarm object list using Json data.
+     *           If data not there then set up empty array of n fixed sze.
+     */
     private void loadData() {
         SharedPreferences sharedPref = mainAlarmActivity.getSharedPreferences("alarmSharedPreferences ", Context.MODE_PRIVATE);
         Gson gson = new Gson();
         String json = sharedPref.getString("alarmObjList", null);
-//        Type type = new TypeToken<ArrayList<Alarm>>(){}.getType();
         Type type = new TypeToken<Alarm[]>(){}.getType();
         alarmObjList = gson.fromJson(json, type);
 
         if(alarmObjList == null) {
-            alarmObjList = new Alarm[100];
+            alarmObjList = new Alarm[Alarm.INSTANCE_LIMIT];
         }else {
             initAlarmTable();
         }
@@ -219,7 +188,6 @@ public class MainAlarmFragment extends Fragment {
      * Function: Creates a new Create Alarm Activity and goes there. Request Code = 1, and waits for result
      * Stimuli: Launches when create_alarm_button is clicked.
      */
-
     protected View.OnClickListener createNewAlarm = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
@@ -237,14 +205,13 @@ public class MainAlarmFragment extends Fragment {
      * Parameters: methodName: String   // will tell from which method an intent is requested from.
      *             ops: String          // will tell why it wants to switch activity.
      */
-
     private void gotoCreateAlarmActivity(String methodName, String ops, Intent i) {
         System.out.printf("Intent change requested by: %s \n",methodName);
 
 
         switch(ops) {
             case "create-alarm":
-                if( Alarm.getInstanceCount() >= Alarm.instanceLimit ) {
+                if( Alarm.getInstanceCount() >= Alarm.INSTANCE_LIMIT ) {
                     System.out.println("Max alarms reached");
                     break;
                 }
@@ -253,7 +220,7 @@ public class MainAlarmFragment extends Fragment {
                 break;
 
             case "copy-alarm":
-                if( Alarm.getInstanceCount() >= Alarm.instanceLimit ) {
+                if( Alarm.getInstanceCount() >= Alarm.INSTANCE_LIMIT ) {
                     System.out.println("Max alarms reached");
                     break;
                 }
@@ -273,8 +240,9 @@ public class MainAlarmFragment extends Fragment {
     /**
      * Function: Handles activity for result intents.
      *           if(code == 1 && OK) Creates alarm valid.
+     *           if(code == 2 && OK) Edits existing alarm valid.
+     *           if(code == 3 && OK) Creates alarm valid that was copied.
      */
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
@@ -310,6 +278,10 @@ public class MainAlarmFragment extends Fragment {
     }
 
 
+    /**
+     * Function: Inserts a new alarm row, adds the alarm to alarm list and calls notify service to initiate notification.
+     * Stumili: When a new alarm is created. (Not existing alarm, can be a copied alarm as its considered a new alarm).
+     */
     protected void insertAlarm(Alarm obj) {
         TableRow tr = createAlarmRow(obj);
         alarm_table.addView(tr);
@@ -323,6 +295,15 @@ public class MainAlarmFragment extends Fragment {
     }
 
 
+    /**
+     * Function: Changes an alarm row with respect to @param timezoneChange.
+     *          if timezoneChange is true, then just edit the text of alarm row of given @param index with time from @param obj.
+     *          else delete @param index and add a new row with @param obj details at this @param index.
+     *          P.s for some reason, when timezoneChage is true and a new alarm is created for the old one, startActForResult has no activity attached.
+     *
+     * Stimuli: When alarm time is edited or updated.
+     *          Called by checkDstAlarms and by onActivityResult when req id = 2.
+     */
     protected void updateAlarm(Alarm obj, int index, boolean timezoneChange) {
         alarmObjList[obj.getAlarmId()] =  obj;
         if(timezoneChange) {
@@ -340,6 +321,10 @@ public class MainAlarmFragment extends Fragment {
             updateAlarmRow(createAlarmRow(obj), index);
     }
 
+    /**
+     * Function: Removes Table row at @param index and adds a row @param tr. Then starts notify service call.
+     * Stimuli: Called by updateAlarm method.
+     */
     protected void updateAlarmRow(TableRow tr, int index) {
         alarm_table.removeViewAt(index);
         alarm_table.addView(tr,index);
@@ -354,10 +339,11 @@ public class MainAlarmFragment extends Fragment {
 
 
     /**
-     * Function: Adds a new alarm row with all its neccesary contents.
-     * Stimuli: Launches when a new alarm is created. Most probably called from onActivityResult
+     * Function: Creates a new alarm row with all its necessary contents.
+     * Stimuli: Is called many times whenever a row needs to be created.
+     * Return: Table Row object with necessary contents.
+     * Layout: VL: TV/TV,  HL: TV/Switch
      */
-
     protected TableRow createAlarmRow(Alarm alarmObj) {
 
         // linear vertical layout
@@ -419,6 +405,10 @@ public class MainAlarmFragment extends Fragment {
     }
 
 
+    /**
+     * Function: When switch is turned on, send alarm and alarm list and turn on alarm in notify service.
+     *           When switch is turned off, send alarm and turn off alarm in notify service.
+     */
     View.OnClickListener switchOnClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
@@ -431,14 +421,12 @@ public class MainAlarmFragment extends Fragment {
             alarmObj.setAlarmSet(isChecked);
             if (isChecked) {
                 Bundle bundle = new Bundle();
-//                    bundle.putParcelable("alarmObj", alarmObjList.get(switchIndex));
                 bundle.putParcelable("alarmObj", alarmObj);
                 bundle.putParcelableArray("alarm-array", alarmObjList);
-                mainNS.setAlarm(mainAlarmActivity, alarmObj.getAlarmId(), bundle, NotifyService.APP_TIME_UPDATE);
+                notifyServiceManager.setAlarm(mainAlarmActivity, alarmObj.getAlarmId(), bundle, NotifyService.APP_TIME_UPDATE);
             } else {
-                mainNS.deleteAllAlarmFor(mainAlarmActivity, alarmObj.getAlarmId());
+                notifyServiceManager.deleteAllAlarmFor(mainAlarmActivity, alarmObj.getAlarmId());
             }
-
         }
     };
 
@@ -453,24 +441,19 @@ public class MainAlarmFragment extends Fragment {
     View.OnClickListener alarmRowClickListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-//            System.out.println("D: "+isDeleteSet);
-
             if(isDeleteSet) {
                 setCheck((TableRow) view);
             }else {
-                // go to new activity
                 Intent editAlarmIntent = new Intent(mainAlarmActivity, CreateAlarmActivity.class);
                 editAlarmIntent.putExtra("alarmAction","edit-alarm");
                 editAlarmIntent.putExtra("editIndex", alarm_table.indexOfChild(view));
 
                 // get alarm and put it in bundle, and put bundle in intent
                 Bundle bundleObj = new Bundle();
-//                bundleObj.putParcelable("editing-alarm", alarmObjList.get(alarm_table.indexOfChild(view)));
                 bundleObj.putParcelable("editing-alarm", alarmObjList[(int)((TableRow) view).getTag()]);
                 editAlarmIntent.putExtras(bundleObj);
 
-//                System.out.println("Main act is: " + mainAlarmActivity);
-//                startActivityForResult(editAlarmIntent, 2);
+                // go to new activity
                 gotoCreateAlarmActivity("alarmRowClickListener", "edit-alarm", editAlarmIntent);
             }
         }
@@ -483,7 +466,6 @@ public class MainAlarmFragment extends Fragment {
      * Stimuli: When alarm row is long pressed.
      * Assumption: Assume checkbox is at index 0 of TableRow.
      */
-
     private void setCheck(TableRow tr) {
         CheckBox cb = (CheckBox) tr.getChildAt(0);
         if(cb.isChecked())
@@ -492,16 +474,15 @@ public class MainAlarmFragment extends Fragment {
             cb.setChecked(true);
     }
 
-
+    /**
+     * Function: Show dialog box which allows copy of alarm with diff time and delete selected alarm.
+     */
     View.OnLongClickListener alarmRowLongClickListener = new View.OnLongClickListener() {
-
         @Override
         public boolean onLongClick(View view) {
             dialogViewIndex = alarm_table.indexOfChild(view);
-//            AlertDialog.Builder builder = new AlertDialog.Builder(mainAlarmActivity, R.style.dialog_light);
             AlertDialog.Builder builder = new AlertDialog.Builder(mainAlarmActivity);
-            builder.setTitle("Options")
-                    .setItems(R.array.planets_array, new DialogInterface.OnClickListener() {
+            builder.setTitle("Options").setItems(R.array.planets_array, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int itemIndex) {
                             if(itemIndex == 0) {
                                 // copy alarm with different time
@@ -536,11 +517,10 @@ public class MainAlarmFragment extends Fragment {
      * Stimuli: Called when delete options manu is clicked,
      *          Called when delete options is clicked from long click dialog.
      */
-
     protected void removeAlarm(int alarmRowIndex) {
         System.out.println("deleting index: " + alarmRowIndex);
         TableRow tr = (TableRow) alarm_table.getChildAt(alarmRowIndex);
-        mainNS.deleteAllAlarmFor(mainAlarmActivity,(int) tr.getTag());
+        notifyServiceManager.deleteAllAlarmFor(mainAlarmActivity,(int) tr.getTag());
         alarm_table.removeViewAt(alarmRowIndex);
         Alarm a = alarmObjList[(int) tr.getTag()];
         alarmObjList[(int) tr.getTag()] = null;
@@ -552,7 +532,6 @@ public class MainAlarmFragment extends Fragment {
      * Function: Responsible for deleting all the alarm rows that has a checked delete box.
      * Stimuli: Called when delete options manu is clicked.
      */
-
     private void removeSelectedAlarms() {
         for(int i = alarm_table.getChildCount() - 1; i >= 0; i--) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
@@ -564,7 +543,6 @@ public class MainAlarmFragment extends Fragment {
                     removeAlarm(i);
                 }
             }
-
         }
     }
 
@@ -577,8 +555,8 @@ public class MainAlarmFragment extends Fragment {
      *              removes all the delete boxes,
      *              adds on/off switches,
      *              show FAB create_alarm_btn,
+     * Stimuli: Called by startup_activity, after delete option is selected from actionbar
      */
-
     public void performMenuDeleteAction() {
         // remove delete options menu
         isDeleteSet = false;
@@ -602,41 +580,27 @@ public class MainAlarmFragment extends Fragment {
         alarmObj = null;
     }
 
-    /**
-     * Function: Sets delete option on action bar if input == true, else removes delete option.
-     * Stimuli: Launches when an alarm row is long pressed.
-     */
-
-//    public void setDeleteMenu(boolean val) {
-//        isDeleteSet = val;  // set static variable, used by onPrepareOptionsMenu
-//        // IMPLEMENT THIS
-//        onPrepareOptionsMenu(currentMenu);
-//    }
-
 
     /**
      * Function: Deletes "delete checkboxes" from all the alarm rows.
      * Stimuli: Launches when delete button is pressed.
      */
-
     protected void removeDeleteBoxes() {
         for(int i = 0; i < alarm_table.getChildCount(); i++) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
             if(tr.getChildAt(0) instanceof CheckBox) {
                 tr.removeViewAt(0);
-                cbId--;
             }
         }
     }
 
 
-/**
- * Function: Disables on/off switch for each alarm when delete button is present.
- * Stimuli: Should always be called before addDeleteBoxes()
- *          If called after, then TableRow will have 3 children instead of 2.
- */
-
+    /**
+     * Function: Disables on/off switch for each alarm when delete button is present.
+     * Stimuli: Should always be called before addDeleteBoxes()
+     *          If called after, then TableRow will have 3 children instead of 2.
+     */
     protected void  disableOnOffSwitch() {
         for(int i = 0; i < alarm_table.getChildCount(); i++) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
@@ -646,7 +610,6 @@ public class MainAlarmFragment extends Fragment {
                 if(ll.getChildAt(1) instanceof Switch) {
                     Switch s = (Switch) ll.getChildAt(ll.getChildCount() - 1);
                     System.out.println(s.getText());
-//                    if(s.getVisibility() == View.VISIBLE)
                     s.setVisibility(View.INVISIBLE);
                 }
             }
@@ -659,7 +622,6 @@ public class MainAlarmFragment extends Fragment {
      * Stimuli: Should always be called after removeDeleteBoxes().
      *          If called before, then TableRow will have 3 children instead of 2.
      */
-
     protected void  enableOnOffSwitches() {
         for (int i = 0; i < alarm_table.getChildCount(); i++) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
@@ -668,7 +630,6 @@ public class MainAlarmFragment extends Fragment {
                 LinearLayout ll = (LinearLayout) tr.getChildAt(1);
                 if(ll.getChildAt(1) instanceof Switch) {
                     Switch s = (Switch) ll.getChildAt(ll.getChildCount() - 1);
-//                    if(s.getVisibility() == View.INVISIBLE)
                     System.out.println(s.getText());
                     s.setVisibility(View.VISIBLE);
                 }
@@ -681,29 +642,26 @@ public class MainAlarmFragment extends Fragment {
      * Function: Adds "delete checkboxes" to all the alarm rows.
      * Stimuli: Launches when an alarm row is long pressed.
      */
-
     protected void addDeleteBoxes() {
         for(int i = 0; i < alarm_table.getChildCount(); i++) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
             // create new checkbox
             CheckBox cb = new CheckBox(mainAlarmActivity);
-            cb.setId(cbId++);
             tr.addView(cb,0);
         }
     }
+
 
     /**
      * Function: When an delete option is pressed, this method does the following, if alarms are present:
      *              removes on/off alarm switches,
      *              adds delete boxes,
-     *              checks the delete box of clicked row,
-     *              change option menu to give delete option,
      *              hide FAB create_alarm_btn,
-     * Stimuli: When an alarm row is long pressed.
+     *              checks the delete box of clicked row,
+     * Stimuli: Called by startup_activity, when delete alarms option is selected from actionbar.
      */
-
-    public void setAlarmDeleteView(Boolean val) {
+    public void setAlarmDeleteView() {
         isDeleteSet = true;
         alarm_table = (TableLayout) mainAlarmActivity.findViewById(R.id.alarm_table);
         create_alarm_btn = (FloatingActionButton)  mainAlarmActivity.findViewById(R.id.create_alarm_btn);
@@ -711,7 +669,6 @@ public class MainAlarmFragment extends Fragment {
 
         if(alarmObjList.length == 0 || alarm_table == null)
             return;
-
 
         // removes on/off alarm switches
         disableOnOffSwitch();
@@ -724,6 +681,13 @@ public class MainAlarmFragment extends Fragment {
 
     }
 
+
+    /**
+     * Function: Creates a hash map which has <string> location for keys and arraylist of <Alarm> of same location.
+     *           The hashmap gets stored in a static hashmap var.
+     *           Needed by Location fragment to display location.
+     * Stimuli: Called everytime users goes to Location fragment from this fragment.
+     */
     private void createLocationGroup() {
         locationMap = new HashMap<String, ArrayList>();
         for(Alarm a : alarmObjList) {
@@ -741,9 +705,9 @@ public class MainAlarmFragment extends Fragment {
         }
     }
 
+    // helper method that shows contents in hashmap
     private void getAllLocation() {
         System.out.println("In get loca");
-
 
         for(String s : locationMap.keySet()) {
             System.out.println(s);
@@ -755,6 +719,10 @@ public class MainAlarmFragment extends Fragment {
     }
 
 
+    /**
+     * Function: Calls createLocationGroup to provides a hashmap of locations to requester, normally an activity.
+     * Stimuli: Called everytime users goes to Location fragment from this fragment.
+     */
     public HashMap<String, ArrayList> getLocationHashMap() {
         createLocationGroup();
         return locationMap;
@@ -794,12 +762,10 @@ public class MainAlarmFragment extends Fragment {
 
 /** ------ Tab fragment stuff -------- **/
 
-    // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
 
@@ -817,7 +783,6 @@ public class MainAlarmFragment extends Fragment {
      * @param param2 Parameter 2.
      * @return A new instance of fragment MainAlarmFragment.
      */
-    // TODO: Rename and change types and number of parameters
     public static MainAlarmFragment newInstance(String param1, String param2) {
         MainAlarmFragment fragment = new MainAlarmFragment();
         Bundle args = new Bundle();
@@ -837,7 +802,6 @@ public class MainAlarmFragment extends Fragment {
         }
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
@@ -853,10 +817,8 @@ public class MainAlarmFragment extends Fragment {
             mListener = (OnFragmentInteractionListener) context;
             System.out.println("In attached");
         } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+            throw new RuntimeException(context.toString() + " must implement OnFragmentInteractionListener");
         }
-        context = context;
     }
 
     @Override
@@ -870,13 +832,8 @@ public class MainAlarmFragment extends Fragment {
      * fragment to allow an interaction in this fragment to be communicated
      * to the activity and potentially other fragments contained in that
      * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
 }

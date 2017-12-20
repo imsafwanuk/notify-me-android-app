@@ -104,7 +104,7 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
                 bundle.putString("delete-ops", "From Activity");
                 tabIndex = startup_tabLayout.getSelectedTabPosition();
                 if(tabIndex == 0){
-                    mainAlarmFragmentObj.setAlarmDeleteView(true);
+                    mainAlarmFragmentObj.setAlarmDeleteView();
                     // change option menu to give delete option
                     setDeleteMenu(true);
                 }
@@ -154,24 +154,6 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
 
         return true;
     }
-
-   /* private void setReminder() {
-        Intent i = new Intent(StartupActivity.this, NotifyService.class);
-        PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), 0, i, 0);
-        AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
-        am.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 2000, pi);
-//         Calendar calendar = Calendar.getInstance();
-//        calendar.set(Calendar.SECOND, 0);
-//        calendar.set(Calendar.MINUTE, 0);
-//        calendar.set(Calendar.HOUR, 0);
-//        calendar.set(Calendar.AM_PM, Calendar.AM);
-//        calendar.add(Calendar.DAY_OF_MONTH, 1);
-
-        System.out.println("creating alarm");
-
-    }
-*/
-
 
 
     /**-------- Tab layout stuff --------**/

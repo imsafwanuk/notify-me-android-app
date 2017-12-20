@@ -25,7 +25,7 @@ import java.util.TimeZone;
 public class Alarm implements Parcelable, Cloneable {
 
 /** Final Variables**/
-    public static final int instanceLimit = 100;    // can only have this many diff alarm instances.
+    public static final int INSTANCE_LIMIT = 100;    // can only have this many diff alarm instances.
 
 /** Static Variables**/
     private static int instanceCount = 0;
@@ -48,7 +48,7 @@ public class Alarm implements Parcelable, Cloneable {
      *             remove id from queue for which that class has alarm objects for.
      */
     static{
-        for( int i = 0; i < instanceLimit; i++)
+        for( int i = 0; i < INSTANCE_LIMIT; i++)
             alarmIdQ.add(i);
     }
 
@@ -60,7 +60,7 @@ public class Alarm implements Parcelable, Cloneable {
      */
     @Nullable
     public static Alarm getAlarmInstance() {
-        if( instanceCount >= instanceLimit )
+        if( instanceCount >= INSTANCE_LIMIT )
             return null;
 
         if( alarmIdQ.peek() != null ) {
@@ -374,5 +374,5 @@ public class Alarm implements Parcelable, Cloneable {
         }
         this.setOnDstTime();
     }
-    
+
 }
