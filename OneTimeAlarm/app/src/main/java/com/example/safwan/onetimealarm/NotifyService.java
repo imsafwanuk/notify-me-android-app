@@ -1,86 +1,84 @@
 package com.example.safwan.onetimealarm;
 
-import android.annotation.TargetApi;
 import android.app.AlarmManager;
 import android.app.NotificationChannel;
-import android.app.NotificationChannelGroup;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
-import android.app.TaskStackBuilder;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
-import android.icu.text.SimpleDateFormat;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.app.NotificationCompat;
-import android.widget.Toast;
 
 import java.util.Calendar;
-import java.util.TimeZone;
 
 
 public class NotifyService extends BroadcastReceiver {
 
-
 /** Final Variables**/
+    public static final boolean SYSTEM_TIME_UPDATE = true;
+    public static final boolean APP_TIME_UPDATE = false;
+    private final static int ID_INCREMENT_VAL = 1000;
 
 /** Static Variables**/
+    private static Alarm[] notifyServiceAlarms = new Alarm[100];
 
 /** Plain Old Variables**/
+    private Context mainAlarmContext;
 
 
+    /**
+     * Function: Can receive 2 different broadcast,
+     *           1. Pending intents, issued by android alarm manager.
+     *           2. ACTIONs when timezone, time manually or automatically changed.
+     *
+     * Assumption: For any of the code in this method to work, user must set at least 1 alarm on.
+     *             This will allow this class to save the CONTEXT.
+     */
+    @Override
+    public void onReceive(Context context, Intent intent) {
 
-    public static final boolean SYSTEM_TIME_UPDATE = true;
-        public static final boolean APP_TIME_UPDATE = false;
+        if(intent.getAction() != null && ( intent.getAction().equals(Intent.ACTION_TIMEZONE_CHANGED) || intent.getAction().equals(Intent.ACTION_TIME_CHANGED) )) {
+            if(intent.getAction().equals(Intent.ACTION_TIMEZONE_CHANGED))
+                System.out.println("TIMEZONE changed " + context);
+            else if(intent.getAction().equals(Intent.ACTION_TIME_CHANGED))
+                System.out.println("TIME set " + context);
 
-        private final static int ID_INCREMENT_VAL = 1000;
-        Context mainAlarmContext;
-        private static Alarm[] notifyServiceAlarms = new Alarm[100];
-
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-            if(intent.getAction() != null && ( intent.getAction().equals(Intent.ACTION_TIMEZONE_CHANGED) || intent.getAction().equals(Intent.ACTION_TIME_CHANGED) )) {
-                if(intent.getAction().equals(Intent.ACTION_TIMEZONE_CHANGED))
-                    System.out.println("TIMEZONE changed " + context);
-                else if(intent.getAction().equals(Intent.ACTION_TIME_CHANGED))
-                    System.out.println("TIME set " + context);
-
-                if(context != null)
-                    resetAllAlarms(context);
-                return;
-            }
-
-//            System.out.println(intent);
-            // get unique alarm id
-            int id = intent.getIntExtra("id", -1);
-            System.out.printf("Alarm notification for id: %d\n", id);
-
-            // get alarm object
-            Alarm alarmObj = intent.getExtras().getParcelable("alarmObj");
-            //print for sanity check
-            System.out.printf("Alarm notification for id: %d at time %s\n" +
-                    "title: %s, description: %s, location: %s\n", id, alarmObj.getTimeString(), alarmObj.getTitle(), alarmObj.getDescription(), alarmObj.getLocation());
-
-
-            // build notification
-            String CHANNEL_ID = "my_channel_01";
-            NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
-                            .setSmallIcon(R.drawable.notification_icon)
-                            .setContentTitle(alarmObj.getTitle())
-                            .setContentText(alarmObj.getDescription());
-
-
-            // launch notification
-            NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-            mNotificationManager.notify(id, mBuilder.build());
-
+            if(context != null)
+                resetAllAlarms(context);
+            return;
         }
 
+        // get unique alarm id
+        int id = intent.getIntExtra("id", -1);
+        System.out.printf("Alarm notification for id: %d\n", id);
 
+        // get alarm object
+        Alarm alarmObj = intent.getExtras().getParcelable("alarmObj");
+        //print for sanity check
+        System.out.printf("Alarm notification for id: %d at time %s\n" +
+                "title: %s, description: %s, location: %s\n", id, alarmObj.getTimeString(), alarmObj.getTitle(), alarmObj.getDescription(), alarmObj.getLocation());
+
+
+        // build notification
+        String CHANNEL_ID = "my_channel_01";
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                        .setSmallIcon(R.drawable.notification_icon)
+                        .setContentTitle(alarmObj.getTitle())
+                        .setContentText(alarmObj.getDescription());
+
+
+        // launch notification
+        NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.notify(id, mBuilder.build());
+
+    }
+
+
+    // maybe needed later for android Oreo.
     public void initChannels(Context context) {
         if (Build.VERSION.SDK_INT < 26)
             return;
@@ -108,12 +106,24 @@ public class NotifyService extends BroadcastReceiver {
     }
 
 
+    /**
+     * Function: This basically initiates pending alarms and schedules them via alarm manager.
+     *           If called from main alarm fragment then it should also have an alarm list in bundle. We save that.
+     *           So, when this method is called due to system time change, we can go over all the saved alarm instances and update their pending time.
+     *
+     *           This method also takes care of DST and time zone changes.
+     *           Also, before setting any alarm, it deletes all the possible alarms, even if not present, for the given alarm ID.
 
+     *           Beware, lot of things are happening below.
+     *
+     * Stimuli: Either from main alarm fragment, with isFromSystem == APP_TIME_UPDATE == false
+     *          Or, from this class, with isFromSystem == SYSTEM_TIME_UPDATE == true
+     */
     public void setAlarm(Context context, int id, Bundle bundle, boolean isFromSystem)
     {
         Alarm alarmObj = bundle.getParcelable("alarmObj");
 
-        /** demo starts **/
+
         if( !isFromSystem ) {
             Parcelable[] p =  bundle.getParcelableArray("alarm-array");
             for (int i = 0; i < p.length; i++ ) {
@@ -121,7 +131,6 @@ public class NotifyService extends BroadcastReceiver {
             }
         }
 
-        /** demo ends **/
 
         // set main alarm context for future use in DST calculations
         mainAlarmContext = context;
@@ -170,8 +179,6 @@ public class NotifyService extends BroadcastReceiver {
                     if(addedMillis < 0)
                         addedMillis += 604800000L;
 
-
-
                     int repeatId = id+ca.get(Calendar.DAY_OF_WEEK); // must be called after calendar day of week is set
                     System.out.printf("Rep Alarm being set for id: %d at time %s, interval: %d\n", repeatId , alarmObj.getTimeString(), addedMillis );
                     PendingIntent pendingIntent = PendingIntent.getBroadcast (context, repeatId , notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
@@ -182,14 +189,17 @@ public class NotifyService extends BroadcastReceiver {
     }
 
 
-    // id doesn't  need to be * with ID_INCREMENT_VAL before being passed in method
+
+    /**
+     * Function: Deletes all alarms for a given alarm id.
+     * Assumption: ID should be a value from 0 -> Alarm.INSTANCE_LIMIT, and not to be * with ID_INCREMENT_VAL before being passed in method
+     * Stimuli: Called everytime setAlarm sets an alarm for an ID.
+     */
     public void deleteAllAlarmFor(Context context, int id) {
         id*= ID_INCREMENT_VAL;
         // delete from 0-7 days
         for(int i = 0; i <= Calendar.SATURDAY; i++) {
             int repeatId = id+i;
-//            System.out.println("cancel alarm for " + repeatId);
-
             Intent intent = new Intent(context, NotifyService.class);
             PendingIntent sender = PendingIntent.getBroadcast(context, repeatId, intent, 0);
             AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -199,8 +209,11 @@ public class NotifyService extends BroadcastReceiver {
 
 
 
-
-
+    /**
+     * Function: If alarms are saved in this class, it will ensure they are scheduled again, to allow proper time.
+     * Stimuli: Called when system intent actions are fired to onReceive method.
+     * Assumption: A valid context MUST be passed.
+     */
     private void resetAllAlarms(Context context) {
         for( Alarm a : notifyServiceAlarms ) {
             if( a != null) {
