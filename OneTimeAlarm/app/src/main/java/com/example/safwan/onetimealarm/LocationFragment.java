@@ -19,8 +19,14 @@ import java.util.HashMap;
 
 public class LocationFragment extends Fragment {
 
+/** Final Variables**/
+
+
+/** Static Variables**/
     private static Activity locationActivity;
     static HashMap<String, ArrayList> locationMap;
+
+/** Plain Old Variables**/
     HashMap<String, Boolean > isExpandedMap = new HashMap<String, Boolean >();
     TableLayout location_table;
     View view;
@@ -28,6 +34,8 @@ public class LocationFragment extends Fragment {
     boolean demoCollapse;
     ImageView img1;
     TableRow child_row, header_row;
+
+
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -53,23 +61,26 @@ public class LocationFragment extends Fragment {
             }
         });
 
-
-
-
         return view;
     }
 
+
+    /**
+     * Function: Sets up the view of location fragment by creating and adding the table row with necessary details.
+     * Stimuli: Called by startup_activity.
+     * @param map: Needs to be passed a hashmap that contains <String> as locations and arraylist of <Alarm> as values.
+     */
     public void setLocationHashMap(HashMap<String, ArrayList> map) {
         locationMap = map;
         location_table = locationActivity .findViewById(R.id.location_table);
         // getAllLocation();
-//        = myView;
         createLocationRows();
     }
 
 
+    // helper to show map content
     private void getAllLocation() {
-        System.out.println("In get loca");
+        System.out.println("In get loaction frag loca");
 
 
         for(String s : locationMap.keySet()) {
@@ -83,6 +94,11 @@ public class LocationFragment extends Fragment {
 
 
 
+    /**
+     * Function: This is a big method responsible for creating both the header and child rows. Child rows are created by another method, but are called from this one. Maybe we can change that?
+     * Stimuli: Called by setLocationHashMap.
+     * Layout of header rows: TV/TV/ImgV
+     */
     private void createLocationRows() {
             for(String s : locationMap.keySet()) {
             // create header rows
@@ -153,6 +169,13 @@ public class LocationFragment extends Fragment {
         }
     }
 
+
+    /**
+     * Function: Creates child row which is hidden to start off with.
+     * Stimuli: Called by createLocationRows for each alarm for a location key.
+     * Return: Child Table Row.
+     * Layout: VL:(HL:(VL: TV/TV) / HL: TV) / VL: TV
+     */
     private TableRow createChildRow(Alarm alarmObj) {
         // create child elements
         LinearLayout mainVerticalLayout = new LinearLayout(locationActivity);
@@ -238,12 +261,10 @@ public class LocationFragment extends Fragment {
 
 /** ------ Tab fragment stuff -------- **/
 
-    // TODO: Rename parameter arguments, choose names that match
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PARAM1 = "param1";
     private static final String ARG_PARAM2 = "param2";
 
-    // TODO: Rename and change types of parameters
     private String mParam1;
     private String mParam2;
 
@@ -261,7 +282,6 @@ public class LocationFragment extends Fragment {
      * @param param2 Parameter 2.
      * @return A new instance of fragment LocationFragment.
      */
-    // TODO: Rename and change types and number of parameters
     public static LocationFragment newInstance(String param1, String param2) {
         LocationFragment fragment = new LocationFragment();
         Bundle args = new Bundle();
@@ -281,8 +301,6 @@ public class LocationFragment extends Fragment {
     }
 
 
-
-    // TODO: Rename method, update argument and hook method into UI event
     public void onButtonPressed(Uri uri) {
         if (mListener != null) {
             mListener.onFragmentInteraction(uri);
@@ -297,8 +315,7 @@ public class LocationFragment extends Fragment {
             System.out.println("In on attach location fraggie");
             locationActivity = (Activity) context;
         } else {
-            throw new RuntimeException(context.toString()
-                    + " must implement OnFragmentInteractionListener");
+            throw new RuntimeException(context.toString() + " must implement OnFragmentInteractionListener");
         }
     }
 
@@ -313,13 +330,8 @@ public class LocationFragment extends Fragment {
      * fragment to allow an interaction in this fragment to be communicated
      * to the activity and potentially other fragments contained in that
      * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
      */
     public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
         void onFragmentInteraction(Uri uri);
     }
 }
