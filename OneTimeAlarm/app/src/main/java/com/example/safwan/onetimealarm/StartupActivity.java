@@ -51,6 +51,13 @@ import com.example.safwan.onetimealarm.R;
 
 public class StartupActivity extends AppCompatActivity implements MainAlarmFragment.OnFragmentInteractionListener, LocationFragment.OnFragmentInteractionListener{
 
+
+/** Final Variables**/
+
+/** Static Variables**/
+
+/** Plain Old Variables**/
+
     private static boolean isDeleteSet = false;
     static ViewPager startup_pager;
     static PagerAdapter startupPageAdapter;

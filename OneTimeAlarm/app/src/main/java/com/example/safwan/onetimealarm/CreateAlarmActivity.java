@@ -153,7 +153,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
         alarmObj.setDescription(et_description.getText().toString());
         alarmObj.setLocation(et_location.getText().toString());
         alarmObj.setChangeWithDayLightSavings(switch_dayLight.isChecked());
-        alarmObj.alarmDaysList = selectedTextViewDayList;
+        alarmObj.repeatingAlarmDaysList = selectedTextViewDayList;
 
         bundleObj.putParcelable("alarm", alarmObj);
         return bundleObj;

@@ -24,7 +24,16 @@ import java.util.TimeZone;
 
 public class NotifyService extends BroadcastReceiver {
 
-        public static final boolean SYSTEM_TIME_UPDATE = true;
+
+/** Final Variables**/
+
+/** Static Variables**/
+
+/** Plain Old Variables**/
+
+
+
+    public static final boolean SYSTEM_TIME_UPDATE = true;
         public static final boolean APP_TIME_UPDATE = false;
 
         private final static int ID_INCREMENT_VAL = 1000;
@@ -153,8 +162,8 @@ public class NotifyService extends BroadcastReceiver {
 
         }else {
 
-            for(int i =0; i < alarmObj.alarmDaysList.length; i++) {
-                if(alarmObj.alarmDaysList[i] == 1) {
+            for(int i =0; i < alarmObj.repeatingAlarmDaysList.length; i++) {
+                if(alarmObj.repeatingAlarmDaysList[i] == 1) {
                     ca.set(Calendar.DAY_OF_WEEK, i+1);
 
                     long addedMillis = ca.getTimeInMillis() - System.currentTimeMillis();
