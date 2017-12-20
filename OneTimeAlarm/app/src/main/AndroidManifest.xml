@@ -20,10 +20,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity
-            android:name=".CreateAlarmActivity"
+        <activity android:name=".CreateAlarmActivity"
             android:label="@string/emptyString"
-            android:theme="@style/AlarmActionTheme"></activity>
+            android:theme="@style/AlarmActionTheme">
+        </activity>
+        <receiver android:name=".NotifyService">
+        </receiver>
     </application>
 
 </manifest>

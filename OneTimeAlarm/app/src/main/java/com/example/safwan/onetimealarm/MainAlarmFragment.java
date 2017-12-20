@@ -2,12 +2,16 @@ package com.example.safwan.onetimealarm;
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.location.Address;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
@@ -30,8 +34,12 @@ import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
 import java.util.HashMap;
+import java.util.TimeZone;
 
+import static android.content.Context.ALARM_SERVICE;
 import static android.content.Context.MODE_PRIVATE;
 
 /**
@@ -44,6 +52,7 @@ public class MainAlarmFragment extends Fragment {
 
     final static int ALARM_ID_START = 2000;
     final static int CHECKBOX_ID_START = 1000;
+    final static NotifyService mainNS = new NotifyService();
 
 
 /** Static Variables**/
@@ -51,7 +60,8 @@ public class MainAlarmFragment extends Fragment {
     private static boolean isDeleteSet = false;
     protected static int totalAlarmRows = 0;
     protected static int dialogViewIndex;
-    protected static ArrayList<Alarm> alarmObjList;// = new ArrayList<Alarm>();
+//    protected static ArrayList<Alarm> alarmObjList;// = new ArrayList<Alarm>();
+    protected static Alarm[] alarmObjList = new Alarm [100];
     private static View thisView;
     private static Activity mainAlarmActivity;
 
@@ -87,8 +97,13 @@ public class MainAlarmFragment extends Fragment {
         loadData();
         // check for saved alarm objects
         if(savedInstanceState != null && savedInstanceState.containsKey("alarmObjList")) {
-            System.out.println("saved alarms found!");
-            alarmObjList = savedInstanceState.getParcelableArrayList("alarmObjList");
+            System.out.println("saved alarms found!F");
+//            alarmObjList = savedInstanceState.getParcelableArray("alarmObjList");
+            Parcelable[] parcels = savedInstanceState.getParcelableArray("alarmObjList");
+                for ( int i=0; i < 100; i++ ){
+                    alarmObjList[i] = (Alarm) parcels[i];
+                }
+
             initAlarmTable();
             System.out.println("View is: "+ mainAlarmActivity);
         }else if(savedInstanceState != null && savedInstanceState.containsKey("save")) {
@@ -97,12 +112,28 @@ public class MainAlarmFragment extends Fragment {
             System.out.println("No save found!");
         }
 
+        // dst stuff
+        if( getActivity().getIntent().getAction().equals(Intent.ACTION_TIMEZONE_CHANGED) ) {
+            System.out.println("Calling checkDST from main fraggie");
+            checkDstAlarms();
+        }
+
+
+        // init add button
         create_alarm_btn = (FloatingActionButton) thisView.findViewById(R.id.create_alarm_btn);
         create_alarm_btn .setOnClickListener(createNewAlarm);
 
         // demo button
-        chgbtn = (Button) mainAlarmActivity.findViewById(R.id.chngbtn);
-//        chgbtn.setOnClickListener(callMe);
+        chgbtn = (Button) thisView.findViewById(R.id.chngbtn);
+        chgbtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Alarm[] n = new Alarm[100];
+                alarmObjList = Arrays.copyOf(n, 100);
+                alarm_table.removeAllViews();
+//                Alarm.showCurrentQ();
+            }
+        });
 
         create_alarm_btn .setOnClickListener(createNewAlarm);
 
@@ -120,9 +151,12 @@ public class MainAlarmFragment extends Fragment {
 
     protected void initAlarmTable() {
         for(Alarm a : alarmObjList) {
-//            System.out.println();
-            alarm_table.addView(createAlarmRow(a));
-            System.out.println("Row added");
+            if(a != null) {
+                a.removeIdFromQ();
+                TableRow tr = createAlarmRow(a);
+                alarm_table.addView(tr);
+                System.out.println("Row added back");
+            }
         }
     }
 
@@ -142,7 +176,8 @@ public class MainAlarmFragment extends Fragment {
     public void onPause(){
         System.out.println("on pause");
         Bundle bundle = new Bundle();
-        bundle.putParcelableArrayList("alarmObjList", alarmObjList);
+//        bundle.putParcelableArrayList("alarmObjList", alarmObjList);
+        bundle.putParcelableArray("alarmObjList", alarmObjList);
         onSaveInstanceState(bundle);
         super.onPause();
     }
@@ -169,11 +204,12 @@ public class MainAlarmFragment extends Fragment {
         SharedPreferences sharedPref = mainAlarmActivity.getSharedPreferences("alarmSharedPreferences ", Context.MODE_PRIVATE);
         Gson gson = new Gson();
         String json = sharedPref.getString("alarmObjList", null);
-        Type type = new TypeToken<ArrayList<Alarm>>(){}.getType();
+//        Type type = new TypeToken<ArrayList<Alarm>>(){}.getType();
+        Type type = new TypeToken<Alarm[]>(){}.getType();
         alarmObjList = gson.fromJson(json, type);
 
         if(alarmObjList == null) {
-            alarmObjList = new ArrayList<Alarm>();
+            alarmObjList = new Alarm[100];
         }else {
             initAlarmTable();
         }
@@ -208,15 +244,24 @@ public class MainAlarmFragment extends Fragment {
 
         switch(ops) {
             case "create-alarm":
+                if( Alarm.getInstanceCount() >= Alarm.instanceLimit ) {
+                    System.out.println("Max alarms reached");
+                    break;
+                }
+
                 startActivityForResult(i, 1);
+                break;
+
+            case "copy-alarm":
+                if( Alarm.getInstanceCount() >= Alarm.instanceLimit ) {
+                    System.out.println("Max alarms reached");
+                    break;
+                }
+                startActivityForResult(i, 3);
                 break;
 
             case "edit-alarm":
                 startActivityForResult(i, 2);
-                break;
-
-            case "copy-alarm":
-                startActivityForResult(i, 3);
                 break;
 
             default:
@@ -248,7 +293,7 @@ public class MainAlarmFragment extends Fragment {
             // edit existing alarm
             if(data.hasExtra("editIndex")) {
                 int editIndex = data.getIntExtra("editIndex",0);
-                updateAlarm(parceledAlarm, editIndex);
+                updateAlarm(parceledAlarm, editIndex, false);
             }
 
 
@@ -266,20 +311,44 @@ public class MainAlarmFragment extends Fragment {
 
 
     protected void insertAlarm(Alarm obj) {
-        alarm_table.addView(createAlarmRow(obj));
-        System.out.println("Row added");
-        alarmObjList.add(obj);
+        TableRow tr = createAlarmRow(obj);
+        alarm_table.addView(tr);
+        alarmObjList[obj.getAlarmId()] = obj;
+
+        // launch alarm manager to create alarm at this new row's set time by getting switch of row and checking it.
+        LinearLayout ll = (LinearLayout) tr.getChildAt(tr.getChildCount()-1);
+        Switch switchS = (Switch) ll.getChildAt(tr.getChildCount()-1);
+        switchS.callOnClick();
+        System.out.println("Row inserted");
     }
 
 
-    protected void updateAlarm(Alarm obj, int index) {
-        alarmObjList.set(index, obj);
-        updateAlarmRow(createAlarmRow(obj), index);
+    protected void updateAlarm(Alarm obj, int index, boolean timezoneChange) {
+        alarmObjList[obj.getAlarmId()] =  obj;
+        if(timezoneChange) {
+            TableRow tr = (TableRow) alarm_table.getChildAt(index);
+            TextView tv = (TextView) ((LinearLayout) tr.getChildAt(0)).getChildAt(0);
+            tv.setText(obj.getTimeString());
+
+            // launch alarm manager to create alarm at this new row's set time by getting switch of row and checking it.
+            LinearLayout ll = (LinearLayout) tr.getChildAt(tr.getChildCount()-1);
+            Switch switchS = (Switch) ll.getChildAt(tr.getChildCount()-1);
+            switchS.callOnClick();
+
+            System.out.println("Row edited!");
+        } else
+            updateAlarmRow(createAlarmRow(obj), index);
     }
 
     protected void updateAlarmRow(TableRow tr, int index) {
         alarm_table.removeViewAt(index);
         alarm_table.addView(tr,index);
+
+        // launch alarm manager to create alarm at this new row's set time by getting switch of row and checking it.
+        LinearLayout ll = (LinearLayout) tr.getChildAt(tr.getChildCount()-1);
+        Switch switchS = (Switch) ll.getChildAt(tr.getChildCount()-1);
+        switchS.callOnClick();
+
         System.out.println("Row edited!");
     }
 
@@ -326,25 +395,16 @@ public class MainAlarmFragment extends Fragment {
         // switch to display on/off
         Switch row_switch = new Switch(mainAlarmActivity);
 
-        row_switch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-            @Override
-            public void onCheckedChanged(CompoundButton compoundButton, boolean isChecked) {
-                Switch s = (Switch) compoundButton;
-                LinearLayout tempL =  (LinearLayout) s.getParent();
-                TableRow tempRow = (TableRow) tempL.getParent();
-                int switchIndex = alarm_table.indexOfChild(tempRow);
-                if(switchIndex >= 0) {
-                    System.out.println("ALarm: " + alarm_table.indexOfChild(tempRow));
-                    alarmObjList.get(switchIndex).setAlarmSet(isChecked);
-                }
-            }
-        });
+        // must be called after row added to alarm table
+        row_switch.setOnClickListener(switchOnClickListener);
         linear_horizontal_layout.addView(row_switch,1);
         row_switch.setChecked(alarmObj.isAlarmSet());
 
 
         //add 2 liner layout to row
+        System.out.println("Main act is: " + mainAlarmActivity);
         TableRow tr = new TableRow(mainAlarmActivity);
+        tr.setTag(alarmObj.getAlarmId());
 
         tr.addView(linear_vertical_layout);
         tr.addView(linear_horizontal_layout);
@@ -357,6 +417,30 @@ public class MainAlarmFragment extends Fragment {
         // add table row to alarm table
         return tr;
     }
+
+
+    View.OnClickListener switchOnClickListener = new View.OnClickListener() {
+        @Override
+        public void onClick(View view) {
+            Switch s = (Switch) view;
+            boolean isChecked = s.isChecked();
+            LinearLayout tempL = (LinearLayout) s.getParent();
+            TableRow tempRow = (TableRow) tempL.getParent();
+            Alarm alarmObj = alarmObjList[(int)tempRow.getTag()];
+
+            alarmObj.setAlarmSet(isChecked);
+            if (isChecked) {
+                Bundle bundle = new Bundle();
+//                    bundle.putParcelable("alarmObj", alarmObjList.get(switchIndex));
+                bundle.putParcelable("alarmObj", alarmObj);
+                mainNS.setAlarm(mainAlarmActivity, alarmObj.getAlarmId(), bundle);
+            } else {
+                mainNS.deleteAllAlarmFor(mainAlarmActivity, alarmObj.getAlarmId());
+            }
+
+        }
+    };
+
 
 
     /**
@@ -380,9 +464,12 @@ public class MainAlarmFragment extends Fragment {
 
                 // get alarm and put it in bundle, and put bundle in intent
                 Bundle bundleObj = new Bundle();
-                bundleObj.putParcelable("editing-alarm", alarmObjList.get(alarm_table.indexOfChild(view)));
+//                bundleObj.putParcelable("editing-alarm", alarmObjList.get(alarm_table.indexOfChild(view)));
+                bundleObj.putParcelable("editing-alarm", alarmObjList[(int)((TableRow) view).getTag()]);
                 editAlarmIntent.putExtras(bundleObj);
 
+//                System.out.println("Main act is: " + mainAlarmActivity);
+//                startActivityForResult(editAlarmIntent, 2);
                 gotoCreateAlarmActivity("alarmRowClickListener", "edit-alarm", editAlarmIntent);
             }
         }
@@ -421,7 +508,8 @@ public class MainAlarmFragment extends Fragment {
 
                                 // create alarm object bundle for copy alarm
                                 Bundle bundleObj = new Bundle();
-                                bundleObj.putParcelable("copying-alarm", alarmObjList.get(dialogViewIndex));
+                                int alarmId = (int) alarm_table.getChildAt(dialogViewIndex).getTag();
+                                bundleObj.putParcelable("copying-alarm", alarmObjList[alarmId]);
 
                                 // create intent and put bundle in
                                 Intent copyAlarmIntent = new Intent(mainAlarmActivity, CreateAlarmActivity.class);
@@ -448,13 +536,15 @@ public class MainAlarmFragment extends Fragment {
      *          Called when delete options is clicked from long click dialog.
      */
 
-    protected void removeAlarm(int alarmIndex) {
-        System.out.println("deleting index: " + alarmIndex);
-        alarm_table.removeViewAt(alarmIndex);
-        alarmObjList.remove(alarmIndex);
-//        for(Alarm a : alarmObjList) {
-//            System.out.println(a.getHr());
-//        }
+    protected void removeAlarm(int alarmRowIndex) {
+        System.out.println("deleting index: " + alarmRowIndex);
+        TableRow tr = (TableRow) alarm_table.getChildAt(alarmRowIndex);
+        mainNS.deleteAllAlarmFor(mainAlarmActivity,(int) tr.getTag());
+        alarm_table.removeViewAt(alarmRowIndex);
+        Alarm a = alarmObjList[(int) tr.getTag()];
+        alarmObjList[(int) tr.getTag()] = null;
+        Alarm.deconstruct(a);
+
     }
 
     /**
@@ -618,7 +708,7 @@ public class MainAlarmFragment extends Fragment {
         create_alarm_btn = (FloatingActionButton)  mainAlarmActivity.findViewById(R.id.create_alarm_btn);
         System.out.println("Null OblList " +  alarm_table.getChildCount());
 
-        if(alarmObjList.size() == 0 || alarm_table == null)
+        if(alarmObjList.length == 0 || alarm_table == null)
             return;
 
 
@@ -636,15 +726,17 @@ public class MainAlarmFragment extends Fragment {
     private void createLocationGroup() {
         locationMap = new HashMap<String, ArrayList>();
         for(Alarm a : alarmObjList) {
-            String location = a.getLocation();
-            System.out.println("Loca: " + location);
-            if(!location.isEmpty() && !locationMap.containsKey(location)) {
-                locationMap.put(location,new ArrayList<Alarm>());
-            }
+            if( a != null ) {
+                String location = a.getLocation();
+                System.out.println("Loca: " + location);
+                if(!location.isEmpty() && !locationMap.containsKey(location)) {
+                    locationMap.put(location,new ArrayList<Alarm>());
+                }
 
-            ArrayList<Alarm> arr = locationMap.get(location);
-            if(arr != null && !arr.contains(a))
-                arr.add(a);
+                ArrayList<Alarm> arr = locationMap.get(location);
+                if(arr != null && !arr.contains(a))
+                    arr.add(a);
+            }
         }
     }
 
@@ -668,9 +760,28 @@ public class MainAlarmFragment extends Fragment {
     }
 
 
+    /**
+     * Function: Checks all the listed alarms. If DST setting on, then:
+     *           If alarm time is on DST and current time is standard, then convert alarm time to standard.
+     *           If alarm time is not on DST and current time is on DST, then convert alarm time to DST
+     * Stimuli: Called when an intent with 'Intent.ACTION_TIMEZONE_CHANGED' is received from NotifyService class.
+     */
+    public void checkDstAlarms() {
+        alarm_table = mainAlarmActivity.findViewById(R.id.alarm_table);
 
+        for(Alarm a : alarmObjList) {
+            if( a != null )
+                a.resolveDstAlarmTime();
+        }
 
-
+        // need to update rows as well.
+        for( int i =0; i < alarm_table.getChildCount(); i++ ) {
+            Alarm a = alarmObjList[(int)alarm_table.getChildAt(i).getTag()];
+            if(a.isChangeWithDayLightSavings()) {
+                updateAlarm(a, i, true);
+            }
+        }
+    }
 
 
 
@@ -768,3 +879,4 @@ public class MainAlarmFragment extends Fragment {
         void onFragmentInteraction(Uri uri);
     }
 }
+

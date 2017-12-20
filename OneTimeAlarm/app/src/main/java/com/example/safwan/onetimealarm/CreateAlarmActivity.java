@@ -14,12 +14,16 @@ import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.TimePicker;
 
+import java.util.ArrayList;
+import java.util.Calendar;
+
 public class CreateAlarmActivity extends AppCompatActivity {
 
     Button cancel_btn, save_btn;
     Menu currentMenu;
     // repeating days TextView item
     TextView sun, mon, tue, wed, thu, fri, sat;
+    int[] selectedTextViewDayList = new int[7];
     TimePicker timePicker;
     Alarm alarmObj;
     EditText et_location, et_title, et_description;
@@ -39,13 +43,18 @@ public class CreateAlarmActivity extends AppCompatActivity {
         mActionBar.setCustomView(customView);
         mActionBar.setDisplayShowCustomEnabled(true);
 
+        // add text view 7 days of week
+//        dayTextViewList.add(sun); dayTextViewList.add(mon); dayTextViewList.add(tue);
+//            dayTextViewList.add(wed); dayTextViewList.add(thu);
+//            dayTextViewList.add(fri); dayTextViewList.add(sat);
+
 
         timePicker = (TimePicker) findViewById(R.id.timePicker);
         et_title = (EditText) findViewById(R.id.et_title);
         et_location = (EditText) findViewById(R.id.et_location);
         et_description = (EditText) findViewById(R.id.et_description);
         switch_dayLight = (Switch) findViewById(R.id.switch_dayLight);
-
+        alarmObj = null;
 
 
         /**Get intent and deal with it accordingly**/
@@ -135,7 +144,8 @@ public class CreateAlarmActivity extends AppCompatActivity {
      */
     private Bundle saveAlarmInstance() {
         Bundle bundleObj = new Bundle();
-        alarmObj = new Alarm();
+        if(alarmObj == null)
+            alarmObj = Alarm.getAlarmInstance();
 
         int[] arr = getAlarmTime();
         alarmObj.setAlarmTime(arr[0], arr[1]);
@@ -143,11 +153,11 @@ public class CreateAlarmActivity extends AppCompatActivity {
         alarmObj.setDescription(et_description.getText().toString());
         alarmObj.setLocation(et_location.getText().toString());
         alarmObj.setChangeWithDayLightSavings(switch_dayLight.isChecked());
+        alarmObj.alarmDaysList = selectedTextViewDayList;
 
         bundleObj.putParcelable("alarm", alarmObj);
         return bundleObj;
     }
-
 
     /**
      * Function: Stores the hr and min, in 24hr format in an arr and returns that.
@@ -196,10 +206,15 @@ public class CreateAlarmActivity extends AppCompatActivity {
         public void onClick(View view) {
             TextView tv = (TextView)view;
             System.out.println(getResources().getResourceEntryName(tv.getId()));
-            if(tv.getCurrentTextColor() == getResources().getColor(R.color.colorPrimary))
+            if(tv.getCurrentTextColor() == getResources().getColor(R.color.colorPrimary)) {
+                selectedTextViewDayList[convertStringToCalendarDay(getResources().getResourceEntryName(tv.getId())) - 1] = 0;
                 tv.setTextColor(getResources().getColor(R.color.darker_grey));
-            else
+            }
+            else {
+                selectedTextViewDayList[convertStringToCalendarDay(getResources().getResourceEntryName(tv.getId())) - 1] = 1;
                 tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+            }
+
 
         }
     };
@@ -216,10 +231,8 @@ public class CreateAlarmActivity extends AppCompatActivity {
         timePicker.setHour(obj.getHrOfDay());
         timePicker.setMinute(obj.getMin());
 
-
         // title
         et_title.setText(obj.getTitle());
-        System.out.println("Title: "+obj.getTitle());
 
         // location
         et_location.setText(obj.getLocation());
@@ -229,6 +242,29 @@ public class CreateAlarmActivity extends AppCompatActivity {
 
         // change with day light
         switch_dayLight.setChecked(obj.isChangeWithDayLightSavings());
+
+        // remove this alarm
+        alarmObj = obj;
     }
 
+    private int convertStringToCalendarDay(String str) {
+        switch(str) {
+            case "sun":
+                return Calendar.SUNDAY;
+            case "mon":
+                return Calendar.MONDAY;
+            case "tue":
+                return Calendar.TUESDAY;
+            case "wed":
+                return Calendar.WEDNESDAY;
+            case "thu":
+                return Calendar.THURSDAY;
+            case "fri":
+                return Calendar.FRIDAY;
+            case "sat":
+                return Calendar.SATURDAY;
+            default:
+                return -1;
+        }
+    }
 }

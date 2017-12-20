@@ -1,0 +1,4 @@
+work with timezones
+deconstructors in java
+efficient search of unique id's = static queue to hold free ids
+object pooling pattern to limit creation of objects (not implemented yet)

@@ -2,7 +2,11 @@ package com.example.safwan.onetimealarm;
 
 
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.AlertDialog;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -39,6 +43,7 @@ import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.widget.FrameLayout;
+import android.widget.Toast;
 
 import com.example.safwan.onetimealarm.R;
 
@@ -60,7 +65,7 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
         setContentView(R.layout.activity_startup);
 
         setupTabbedFragments(savedInstanceState);
-
+//        setReminder();
 //        mainAlarmFragmentObj = (MainAlarmFragment)getFragmentManager().findFragmentByTag("MY_FRAGMENT");
 
     }
@@ -108,7 +113,11 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
                     mainAlarmFragmentObj.performMenuDeleteAction();
                     // change option menu to give delete option
                     setDeleteMenu(false);
-                    }
+                }
+                return true;
+
+            case R.id.refresh:
+                mainAlarmFragmentObj.checkDstAlarms();
                 return true;
 
             default:
@@ -139,8 +148,22 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
         return true;
     }
 
+   /* private void setReminder() {
+        Intent i = new Intent(StartupActivity.this, NotifyService.class);
+        PendingIntent pi = PendingIntent.getBroadcast(getApplicationContext(), 0, i, 0);
+        AlarmManager am = (AlarmManager) getSystemService(ALARM_SERVICE);
+        am.set(AlarmManager.RTC_WAKEUP, System.currentTimeMillis() + 2000, pi);
+//         Calendar calendar = Calendar.getInstance();
+//        calendar.set(Calendar.SECOND, 0);
+//        calendar.set(Calendar.MINUTE, 0);
+//        calendar.set(Calendar.HOUR, 0);
+//        calendar.set(Calendar.AM_PM, Calendar.AM);
+//        calendar.add(Calendar.DAY_OF_MONTH, 1);
 
+        System.out.println("creating alarm");
 
+    }
+*/
 
 
 
