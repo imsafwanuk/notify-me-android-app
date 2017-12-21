@@ -10,6 +10,7 @@ import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.LinearLayout;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.TimePicker;
@@ -19,6 +20,11 @@ import java.util.Calendar;
 
 public class CreateAlarmActivity extends AppCompatActivity {
 
+/** Final Variables**/
+
+/** Static Variables**/
+
+/** Plain Old Variables**/
     Button cancel_btn, save_btn;
     Menu currentMenu;
     // repeating days TextView item
@@ -29,12 +35,15 @@ public class CreateAlarmActivity extends AppCompatActivity {
     EditText et_location, et_title, et_description;
     Switch switch_dayLight;
     Intent globalReceiveIntent;
+    LinearLayout days_linear_layout;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_create_alarm);
 
+        // inflate layout
         android.support.v7.app.ActionBar mActionBar = getSupportActionBar();
         mActionBar.setDisplayShowHomeEnabled(false);
         mActionBar.setDisplayShowTitleEnabled(false);
@@ -43,19 +52,17 @@ public class CreateAlarmActivity extends AppCompatActivity {
         mActionBar.setCustomView(customView);
         mActionBar.setDisplayShowCustomEnabled(true);
 
-        // add text view 7 days of week
-//        dayTextViewList.add(sun); dayTextViewList.add(mon); dayTextViewList.add(tue);
-//            dayTextViewList.add(wed); dayTextViewList.add(thu);
-//            dayTextViewList.add(fri); dayTextViewList.add(sat);
-
-
         timePicker = (TimePicker) findViewById(R.id.timePicker);
         et_title = (EditText) findViewById(R.id.et_title);
         et_location = (EditText) findViewById(R.id.et_location);
         et_description = (EditText) findViewById(R.id.et_description);
         switch_dayLight = (Switch) findViewById(R.id.switch_dayLight);
+        days_linear_layout = (LinearLayout) findViewById(R.id.days_linear_layout);
         alarmObj = null;
 
+
+        this.setupBtn();
+        this.setupRepeatingDaysOnClick();
 
         /**Get intent and deal with it accordingly**/
         globalReceiveIntent = getIntent();
@@ -89,11 +96,16 @@ public class CreateAlarmActivity extends AppCompatActivity {
             System.out.println("default call to new activity.");
         }
 
-        this.setupBtn();
-        this.setupRepeatingDaysOnClick();
-
     }
 
+
+    /**
+     * Function: Assigns click listener to cancel and save button.
+     *           And finishes activity task and returns to parent activity from where the intent came.
+     *
+     * Assumption:StartActivityForResult is used to launch the intent that this class gets.
+     * Stimuli: Called by onCreate method.
+     */
     private void setupBtn() {
         cancel_btn = (Button) findViewById(R.id.cancel_btn);
         save_btn = (Button) findViewById(R.id.save_btn);
@@ -180,20 +192,24 @@ public class CreateAlarmActivity extends AppCompatActivity {
      * Stimuli: Its an init method, called by onCreate method.
      */
     private void setupRepeatingDaysOnClick() {
+        for( int i =0; i < days_linear_layout.getChildCount(); i++ ) {
+            TextView day = (TextView) days_linear_layout.getChildAt(i);
+            day.setOnClickListener(repeatingDaysOnClickListener);
+        }
         sun = findViewById(R.id.sun);
-        sun.setOnClickListener(repeatingDaysOnClickListener);
+//        sun.setOnClickListener(repeatingDaysOnClickListener);
         mon = findViewById(R.id.mon);
-        mon.setOnClickListener(repeatingDaysOnClickListener);
+//        mon.setOnClickListener(repeatingDaysOnClickListener);
         tue = findViewById(R.id.tue);
-        tue.setOnClickListener(repeatingDaysOnClickListener);
+//        tue.setOnClickListener(repeatingDaysOnClickListener);
         wed = findViewById(R.id.wed);
-        wed.setOnClickListener(repeatingDaysOnClickListener);
+//        wed.setOnClickListener(repeatingDaysOnClickListener);
         thu = findViewById(R.id.thu);
-        thu.setOnClickListener(repeatingDaysOnClickListener);
+//        thu.setOnClickListener(repeatingDaysOnClickListener);
         fri = findViewById(R.id.fri);
-        fri.setOnClickListener(repeatingDaysOnClickListener);
+//        fri.setOnClickListener(repeatingDaysOnClickListener);
         sat = findViewById(R.id.sat);
-        sat.setOnClickListener(repeatingDaysOnClickListener);
+//        sat.setOnClickListener(repeatingDaysOnClickListener);
 
 
     }
@@ -205,14 +221,18 @@ public class CreateAlarmActivity extends AppCompatActivity {
         @Override
         public void onClick(View view) {
             TextView tv = (TextView)view;
-            System.out.println(getResources().getResourceEntryName(tv.getId()));
+
+            // remove day
             if(tv.getCurrentTextColor() == getResources().getColor(R.color.colorPrimary)) {
                 selectedTextViewDayList[convertStringToCalendarDay(getResources().getResourceEntryName(tv.getId())) - 1] = 0;
                 tv.setTextColor(getResources().getColor(R.color.darker_grey));
+                System.out.println("Removing: " + getResources().getResourceEntryName(tv.getId()));
             }
             else {
+                // add day
                 selectedTextViewDayList[convertStringToCalendarDay(getResources().getResourceEntryName(tv.getId())) - 1] = 1;
                 tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+                System.out.println("Adding: " + getResources().getResourceEntryName(tv.getId()));
             }
 
 
@@ -231,6 +251,21 @@ public class CreateAlarmActivity extends AppCompatActivity {
         timePicker.setHour(obj.getHrOfDay());
         timePicker.setMinute(obj.getMin());
 
+        // repeating days
+        if(obj.isOnRepeat()) {
+            System.out.println("Rep days present");
+            int[] arr = obj.getRepeatingAlarmDays();
+            for( int i =0; i < arr.length; i++ ) {
+                if(arr[i] == 1) {
+                    days_linear_layout.getChildAt(i).callOnClick();
+                    System.out.println("Rep days are: " + ((TextView) days_linear_layout.getChildAt(i)).getText());
+
+                }
+
+            }
+        }
+
+
         // title
         et_title.setText(obj.getTitle());
 
@@ -247,6 +282,11 @@ public class CreateAlarmActivity extends AppCompatActivity {
         alarmObj = obj;
     }
 
+    /**
+     * Function: Takes a String of days name and converts them into int, 1 = sun, 7 = sat.
+     * @param str should be lowercase 3 letter days, sun, mon, tue ...
+     * Return: Any one int from 1..7;
+     */
     private int convertStringToCalendarDay(String str) {
         switch(str) {
             case "sun":
@@ -268,3 +308,8 @@ public class CreateAlarmActivity extends AppCompatActivity {
         }
     }
 }
+
+// add text view 7 days of week
+//        dayTextViewList.add(sun); dayTextViewList.add(mon); dayTextViewList.add(tue);
+//            dayTextViewList.add(wed); dayTextViewList.add(thu);
+//            dayTextViewList.add(fri); dayTextViewList.add(sat);

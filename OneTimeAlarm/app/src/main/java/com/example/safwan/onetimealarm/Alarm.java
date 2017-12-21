@@ -274,7 +274,6 @@ public class Alarm implements Parcelable, Cloneable {
      *         else false.
      */
     public boolean isOnRepeat() {
-        int count = 0;
         for (int i : repeatingAlarmDaysList) {
             if( i == 1)
                 return true;
@@ -375,4 +374,8 @@ public class Alarm implements Parcelable, Cloneable {
         this.setOnDstTime();
     }
 
+
+    public int[] getRepeatingAlarmDays() {
+        return this.repeatingAlarmDaysList;
+    }
 }

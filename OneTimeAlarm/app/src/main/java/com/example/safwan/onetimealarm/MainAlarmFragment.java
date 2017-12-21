@@ -350,31 +350,52 @@ public class MainAlarmFragment extends Fragment {
         LinearLayout linear_vertical_layout = new LinearLayout(mainAlarmActivity);
         linear_vertical_layout.setOrientation(LinearLayout.VERTICAL);
 
+/** Params **/
+        TableRow.LayoutParams lvParam = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT,2.0f);
+        linear_vertical_layout.setLayoutParams(lvParam);
+/** Params **/
 
         // TextView to display time
         TextView tv_time = new TextView(mainAlarmActivity);
-        tv_time.setLayoutParams(new ViewGroup.LayoutParams(
-                140,
-                40));
+//        tv_time.setLayoutParams(new ViewGroup.LayoutParams(
+//                140,
+//                40));
+
+/** Params **/
+    LinearLayout.LayoutParams tvTimeParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT,2.0f);
+    tv_time.setLayoutParams(tvTimeParam);
+/** Params **/
 
         tv_time.setText(alarmObj.getTimeString());
         linear_vertical_layout.addView(tv_time,0);
 
         // TextView to display title
         TextView tv_title = new TextView(mainAlarmActivity);
+/** Params **/
+        LinearLayout.LayoutParams tvTitleParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT,2.0f);
+        tv_title.setLayoutParams(tvTitleParam );
+/** Params **/
         tv_title.setText(alarmObj.getTitle());
         linear_vertical_layout.addView(tv_title,1);
 
         // linear horizontal layout
         LinearLayout linear_horizontal_layout = new LinearLayout(mainAlarmActivity);
-//        linear_horizontal_layout.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
         linear_horizontal_layout.setOrientation(LinearLayout.HORIZONTAL);
+/** Params **/
+        TableRow.LayoutParams hlParam = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 4.0f);
+        linear_horizontal_layout.setLayoutParams(hlParam);
+/** Params **/
+
 
         // TextView to display days
         TextView tv_day = new TextView(mainAlarmActivity);
-        tv_day.setLayoutParams(new ViewGroup.LayoutParams(
-                200,
-                ViewGroup.LayoutParams.MATCH_PARENT));
+//        tv_day.setLayoutParams(new ViewGroup.LayoutParams(
+//                200,
+//                ViewGroup.LayoutParams.MATCH_PARENT));
+/** Params **/
+        LinearLayout.LayoutParams tvDayParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.MATCH_PARENT,3.0f);
+        tv_day.setLayoutParams(tvDayParam );
+/** Params **/
         tv_day.setText("S M T");
         linear_horizontal_layout.addView(tv_day,0);
 
@@ -390,6 +411,8 @@ public class MainAlarmFragment extends Fragment {
         //add 2 liner layout to row
         System.out.println("Main act is: " + mainAlarmActivity);
         TableRow tr = new TableRow(mainAlarmActivity);
+        TableRow.LayoutParams trParam= new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,TableRow.LayoutParams.MATCH_PARENT,6.0f);
+        tr.setLayoutParams(trParam);
         tr.setTag(alarmObj.getAlarmId());
 
         tr.addView(linear_vertical_layout);

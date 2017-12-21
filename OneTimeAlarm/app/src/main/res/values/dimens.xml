@@ -1,3 +1,4 @@
 <resources>
     <dimen name="fab_margin">16dp</dimen>
+    <dimen name="table_row_lower_border">2dp</dimen>
 </resources>

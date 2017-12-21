@@ -55,16 +55,18 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
 /** Final Variables**/
 
 /** Static Variables**/
-
-/** Plain Old Variables**/
-
     private static boolean isDeleteSet = false;
     static ViewPager startup_pager;
     static PagerAdapter startupPageAdapter;
+
+/** Plain Old Variables**/
     TabLayout startup_tabLayout;
     private Menu currentMenu;
     MainAlarmFragment mainAlarmFragmentObj;
     LocationFragment locationFragmentObj;
+
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -72,9 +74,6 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
         setContentView(R.layout.activity_startup);
 
         setupTabbedFragments(savedInstanceState);
-//        setReminder();
-//        mainAlarmFragmentObj = (MainAlarmFragment)getFragmentManager().findFragmentByTag("MY_FRAGMENT");
-
     }
 
 
@@ -161,15 +160,15 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
 
         startup_tabLayout = (TabLayout) findViewById(R.id.startup_tabLayout);
 
-// Create a new Tab named "First"
+        // Create a new Tab named
         TabLayout.Tab firstTab = startup_tabLayout.newTab();
-        firstTab.setText("Alarms"); // set the Text for the first Tab
-// first tab
-        startup_tabLayout.addTab(firstTab); // add  the tab at in the TabLayout
-// Create a new Tab named "Second"
+        firstTab.setText("Alarms");
+        startup_tabLayout.addTab(firstTab);
+
+        // Create a new Tab named
         TabLayout.Tab secondTab = startup_tabLayout.newTab();
-        secondTab.setText("Locations"); // set the Text for the second Tab
-        startup_tabLayout.addTab(secondTab); // add  the tab  in the TabLayout
+        secondTab.setText("Locations");
+        startup_tabLayout.addTab(secondTab);
 
         startup_pager = (ViewPager)findViewById(R.id.startup_pager);
         startupPageAdapter = new PagerAdapter(getSupportFragmentManager(),startup_tabLayout.getTabCount());
