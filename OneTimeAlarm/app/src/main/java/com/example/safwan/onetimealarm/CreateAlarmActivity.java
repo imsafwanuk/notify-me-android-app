@@ -223,7 +223,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
             TextView tv = (TextView)view;
 
             // remove day
-            if(tv.getCurrentTextColor() == getResources().getColor(R.color.colorPrimary)) {
+            if(tv.getCurrentTextColor() == getResources().getColor(R.color.myColorPrimaryDark)) {
                 selectedTextViewDayList[convertStringToCalendarDay(getResources().getResourceEntryName(tv.getId())) - 1] = 0;
                 tv.setTextColor(getResources().getColor(R.color.darker_grey));
                 System.out.println("Removing: " + getResources().getResourceEntryName(tv.getId()));
@@ -231,7 +231,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
             else {
                 // add day
                 selectedTextViewDayList[convertStringToCalendarDay(getResources().getResourceEntryName(tv.getId())) - 1] = 1;
-                tv.setTextColor(getResources().getColor(R.color.colorPrimary));
+                tv.setTextColor(getResources().getColor(R.color.myColorPrimaryDark));
                 System.out.println("Adding: " + getResources().getResourceEntryName(tv.getId()));
             }
 

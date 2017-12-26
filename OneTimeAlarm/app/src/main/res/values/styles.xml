@@ -8,11 +8,11 @@
         <item name="colorAccent">@color/myColorAccent</item>
     </style>
 
-    <style name="AlarmActionTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="AlarmCreateTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/darker_grey</item>
-        <item name="colorPrimaryDark">@color/colorPrimary</item>
-        <item name="colorAccent">@color/colorPrimaryDark</item>
+        <item name="colorPrimaryDark">@color/myColorPrimaryDark</item>
+        <item name="colorAccent">@color/myColorPrimary</item>
     </style>
 
     <style name="AppTheme.AppBarOverlay" parent="ThemeOverlay.AppCompat.Dark.ActionBar" />

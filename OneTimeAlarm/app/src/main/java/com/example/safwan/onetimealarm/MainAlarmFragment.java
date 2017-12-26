@@ -1,5 +1,6 @@
 package com.example.safwan.onetimealarm;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,6 +12,8 @@ import android.os.Parcelable;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.app.AlertDialog;
+import android.text.Html;
+import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
@@ -23,9 +26,12 @@ import android.widget.Switch;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
+import org.w3c.dom.Text;
 
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -91,6 +97,7 @@ public class MainAlarmFragment extends Fragment {
         create_alarm_btn.setOnClickListener(createNewAlarm);
 
         // demo button
+/*
         chgbtn = (Button) thisView.findViewById(R.id.chngbtn);
         chgbtn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -102,6 +109,7 @@ public class MainAlarmFragment extends Fragment {
         });
 
         create_alarm_btn .setOnClickListener(createNewAlarm);
+*/
         return thisView;
     }
 
@@ -117,7 +125,8 @@ public class MainAlarmFragment extends Fragment {
                 a.removeIdFromQ();
                 TableRow tr = createAlarmRow(a);
                 alarm_table.addView(tr);
-//                System.out.println("Row added back");
+                alarm_table.addView(createLowerBorderRow());
+                System.out.println("Row added back");
             }
         }
     }
@@ -285,6 +294,7 @@ public class MainAlarmFragment extends Fragment {
     protected void insertAlarm(Alarm obj) {
         TableRow tr = createAlarmRow(obj);
         alarm_table.addView(tr);
+        alarm_table.addView(createLowerBorderRow());
         alarmObjList[obj.getAlarmId()] = obj;
 
         // launch alarm manager to create alarm at this new row's set time by getting switch of row and checking it.
@@ -339,96 +349,6 @@ public class MainAlarmFragment extends Fragment {
 
 
     /**
-     * Function: Creates a new alarm row with all its necessary contents.
-     * Stimuli: Is called many times whenever a row needs to be created.
-     * Return: Table Row object with necessary contents.
-     * Layout: VL: TV/TV,  HL: TV/Switch
-     */
-    protected TableRow createAlarmRow(Alarm alarmObj) {
-
-        // linear vertical layout
-        LinearLayout linear_vertical_layout = new LinearLayout(mainAlarmActivity);
-        linear_vertical_layout.setOrientation(LinearLayout.VERTICAL);
-
-/** Params **/
-        TableRow.LayoutParams lvParam = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.MATCH_PARENT,2.0f);
-        linear_vertical_layout.setLayoutParams(lvParam);
-/** Params **/
-
-        // TextView to display time
-        TextView tv_time = new TextView(mainAlarmActivity);
-//        tv_time.setLayoutParams(new ViewGroup.LayoutParams(
-//                140,
-//                40));
-
-/** Params **/
-    LinearLayout.LayoutParams tvTimeParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT,2.0f);
-    tv_time.setLayoutParams(tvTimeParam);
-/** Params **/
-
-        tv_time.setText(alarmObj.getTimeString());
-        linear_vertical_layout.addView(tv_time,0);
-
-        // TextView to display title
-        TextView tv_title = new TextView(mainAlarmActivity);
-/** Params **/
-        LinearLayout.LayoutParams tvTitleParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT,2.0f);
-        tv_title.setLayoutParams(tvTitleParam );
-/** Params **/
-        tv_title.setText(alarmObj.getTitle());
-        linear_vertical_layout.addView(tv_title,1);
-
-        // linear horizontal layout
-        LinearLayout linear_horizontal_layout = new LinearLayout(mainAlarmActivity);
-        linear_horizontal_layout.setOrientation(LinearLayout.HORIZONTAL);
-/** Params **/
-        TableRow.LayoutParams hlParam = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT, 4.0f);
-        linear_horizontal_layout.setLayoutParams(hlParam);
-/** Params **/
-
-
-        // TextView to display days
-        TextView tv_day = new TextView(mainAlarmActivity);
-//        tv_day.setLayoutParams(new ViewGroup.LayoutParams(
-//                200,
-//                ViewGroup.LayoutParams.MATCH_PARENT));
-/** Params **/
-        LinearLayout.LayoutParams tvDayParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.MATCH_PARENT,3.0f);
-        tv_day.setLayoutParams(tvDayParam );
-/** Params **/
-        tv_day.setText("S M T");
-        linear_horizontal_layout.addView(tv_day,0);
-
-        // switch to display on/off
-        Switch row_switch = new Switch(mainAlarmActivity);
-
-        // must be called after row added to alarm table
-        row_switch.setOnClickListener(switchOnClickListener);
-        linear_horizontal_layout.addView(row_switch,1);
-        row_switch.setChecked(alarmObj.isAlarmSet());
-
-
-        //add 2 liner layout to row
-        System.out.println("Main act is: " + mainAlarmActivity);
-        TableRow tr = new TableRow(mainAlarmActivity);
-        TableRow.LayoutParams trParam= new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,TableRow.LayoutParams.MATCH_PARENT,6.0f);
-        tr.setLayoutParams(trParam);
-        tr.setTag(alarmObj.getAlarmId());
-
-        tr.addView(linear_vertical_layout);
-        tr.addView(linear_horizontal_layout);
-
-        // add row click listener
-        tr.setOnClickListener(alarmRowClickListener);
-        // add row long click listener
-        tr.setOnLongClickListener(alarmRowLongClickListener);
-
-        // add table row to alarm table
-        return tr;
-    }
-
-
-    /**
      * Function: When switch is turned on, send alarm and alarm list and turn on alarm in notify service.
      *           When switch is turned off, send alarm and turn off alarm in notify service.
      */
@@ -446,14 +366,27 @@ public class MainAlarmFragment extends Fragment {
                 Bundle bundle = new Bundle();
                 bundle.putParcelable("alarmObj", alarmObj);
                 bundle.putParcelableArray("alarm-array", alarmObjList);
-                notifyServiceManager.setAlarm(mainAlarmActivity, alarmObj.getAlarmId(), bundle, NotifyService.APP_TIME_UPDATE);
+                long intervalTimeInMillis = notifyServiceManager.setAlarm(mainAlarmActivity, alarmObj.getAlarmId(), bundle, NotifyService.APP_TIME_UPDATE);
+                toastAlarmInterval(intervalTimeInMillis);
             } else {
                 notifyServiceManager.deleteAllAlarmFor(mainAlarmActivity, alarmObj.getAlarmId());
+                toastMessage("Notify cancelled", Toast.LENGTH_SHORT);
             }
         }
     };
 
+    private void toastAlarmInterval(long interval) {
 
+        String toastStr  = "Will notify at " +new java.text.SimpleDateFormat("h:mm a E,\n\t\t\t\t\t\tdd-MM-yyyy").format(interval);
+        toastMessage(toastStr, Toast.LENGTH_LONG);
+    }
+
+    public void toastMessage(String str, int duration) {
+        Context context = mainAlarmActivity;
+        CharSequence text = str;
+        Toast toast = Toast.makeText(context, text, duration);
+        toast.show();
+    }
 
     /**
      * Function: If isDeleteSet == true, then the clicked row gets checked for delete,
@@ -544,6 +477,7 @@ public class MainAlarmFragment extends Fragment {
         System.out.println("deleting index: " + alarmRowIndex);
         TableRow tr = (TableRow) alarm_table.getChildAt(alarmRowIndex);
         notifyServiceManager.deleteAllAlarmFor(mainAlarmActivity,(int) tr.getTag());
+        alarm_table.removeViewAt(alarmRowIndex+1);
         alarm_table.removeViewAt(alarmRowIndex);
         Alarm a = alarmObjList[(int) tr.getTag()];
         alarmObjList[(int) tr.getTag()] = null;
@@ -556,7 +490,7 @@ public class MainAlarmFragment extends Fragment {
      * Stimuli: Called when delete options manu is clicked.
      */
     private void removeSelectedAlarms() {
-        for(int i = alarm_table.getChildCount() - 1; i >= 0; i--) {
+        for(int i = alarm_table.getChildCount() - 2; i >= 0; i-=2) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
             if(tr.getChildAt(0) instanceof CheckBox) {
                 CheckBox cb = (CheckBox) tr.getChildAt(0);
@@ -603,13 +537,37 @@ public class MainAlarmFragment extends Fragment {
         alarmObj = null;
     }
 
+    /**
+     * Function: A helper method that takes UI back to normal view without deleting any alarms.
+     * Stimuli: When users presses delete all options and goes somewhere else without deleting any alarm.
+     */
+    public void restoreMainStartupView() {
+        // remove delete options menu
+        isDeleteSet = false;
+
+        alarm_table = mainAlarmActivity.findViewById(R.id.alarm_table);
+        create_alarm_btn = (FloatingActionButton)  mainAlarmActivity.findViewById(R.id.create_alarm_btn);
+
+
+        // removes all the delete boxes
+        removeDeleteBoxes();
+
+        // adds on/off switches
+        enableOnOffSwitches();
+
+        // show FAB create_alarm_btn
+        create_alarm_btn.setVisibility(View.VISIBLE);
+
+        alarmObj = null;
+    }
+
 
     /**
      * Function: Deletes "delete checkboxes" from all the alarm rows.
      * Stimuli: Launches when delete button is pressed.
      */
     protected void removeDeleteBoxes() {
-        for(int i = 0; i < alarm_table.getChildCount(); i++) {
+        for(int i = 0; i < alarm_table.getChildCount(); i+=2) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
             if(tr.getChildAt(0) instanceof CheckBox) {
@@ -625,7 +583,7 @@ public class MainAlarmFragment extends Fragment {
      *          If called after, then TableRow will have 3 children instead of 2.
      */
     protected void  disableOnOffSwitch() {
-        for(int i = 0; i < alarm_table.getChildCount(); i++) {
+        for(int i = 0; i < alarm_table.getChildCount(); i+=2) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
             if (tr.getChildAt(1) instanceof LinearLayout) {
@@ -646,7 +604,7 @@ public class MainAlarmFragment extends Fragment {
      *          If called before, then TableRow will have 3 children instead of 2.
      */
     protected void  enableOnOffSwitches() {
-        for (int i = 0; i < alarm_table.getChildCount(); i++) {
+        for (int i = 0; i < alarm_table.getChildCount(); i+=2) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
             if (tr.getChildAt(1) instanceof LinearLayout) {
@@ -666,7 +624,7 @@ public class MainAlarmFragment extends Fragment {
      * Stimuli: Launches when an alarm row is long pressed.
      */
     protected void addDeleteBoxes() {
-        for(int i = 0; i < alarm_table.getChildCount(); i++) {
+        for(int i = 0; i < alarm_table.getChildCount(); i+=2) {
             TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
             // create new checkbox
@@ -767,17 +725,181 @@ public class MainAlarmFragment extends Fragment {
         }
 
         // need to update rows as well.
-        for( int i =0; i < alarm_table.getChildCount(); i++ ) {
-            Alarm a = alarmObjList[(int)alarm_table.getChildAt(i).getTag()];
-            if(a.isChangeWithDayLightSavings()) {
-                updateAlarm(a, i, true);
-            }
+        System.out.println("border row: okol");
+        for( int i =0; i < alarm_table.getChildCount(); i+=2 ) {
+//            if(!alarm_table.getChildAt(i).getTag().equals("border-row")) {
+                Alarm a = alarmObjList[(int)alarm_table.getChildAt(i).getTag()];
+                if(a.isChangeWithDayLightSavings()) {
+                    updateAlarm(a, i, true);
+                }
+//            }
         }
     }
 
 
 
 
+
+    /**
+     * Function: Creates a new alarm row with all its necessary contents.
+     * Stimuli: Is called many times whenever a row needs to be created.
+     * Return: Table Row object with necessary contents.
+     * Layout: VL: TV/TV,  HL: TV/Switch
+     */
+    // this function should be responsible for only creating basic table row with all its child elements.
+    protected TableRow createAlarmRow(Alarm alarmObj) {
+
+        System.out.println("Main act is: " + mainAlarmActivity);
+        TableRow tr = new TableRow(mainAlarmActivity);
+        tr.setTag(alarmObj.getAlarmId());
+        tr.setOnClickListener(alarmRowClickListener);
+        tr.setOnLongClickListener(alarmRowLongClickListener);
+
+/* first layout in the row */
+
+        // linear vertical layout
+        LinearLayout linear_vertical_layout = new LinearLayout(mainAlarmActivity);
+        linear_vertical_layout.setOrientation(LinearLayout.VERTICAL);
+
+        // TextView to display time
+        TextView tv_time = new TextView(mainAlarmActivity);
+        linear_vertical_layout.addView(tv_time,0);
+
+        // TextView to display title
+        TextView tv_title = new TextView(mainAlarmActivity);
+        linear_vertical_layout.addView(tv_title,1);
+
+        tr.addView(linear_vertical_layout,0);
+
+/* second layout in the row */
+
+        // linear horizontal layout
+        LinearLayout linear_horizontal_layout = new LinearLayout(mainAlarmActivity);
+        linear_horizontal_layout.setOrientation(LinearLayout.HORIZONTAL);
+
+        // TextView to display days
+        TextView tv_day = new TextView(mainAlarmActivity);
+        linear_horizontal_layout.addView(tv_day,0);
+
+        // switch to display on/off
+        Switch row_switch = new Switch(mainAlarmActivity);
+        row_switch.setOnClickListener(switchOnClickListener);
+        linear_horizontal_layout.addView(row_switch,1);
+
+
+        tr.addView(linear_horizontal_layout,1);
+
+
+        // add text, time in row
+        tr = addAlarmRowContent(tr, alarmObj);
+        tr = addAlarmRowDesign(tr);
+
+        // add table row to alarm table
+        return tr;
+    }
+
+    // only add text and shit
+    private TableRow addAlarmRowContent(TableRow tr, Alarm alarmObj) {
+
+/* first layout in the row */
+
+        int childAt = 0;
+
+        // add time
+        TextView tv_time = (TextView) ((LinearLayout)tr.getChildAt(childAt)).getChildAt(0);
+        tv_time.setText(alarmObj.getTimeString());
+
+        // add title
+        TextView tv_title = (TextView) ((LinearLayout)tr.getChildAt(childAt)).getChildAt(tr.getChildCount()-1);
+        tv_title.setText(alarmObj.getTitle());
+
+/* second layout in the row */
+
+        childAt = 1;
+
+        // add rep days
+        TextView tv_days = (TextView) ((LinearLayout)tr.getChildAt(childAt)).getChildAt(0);
+        String tvDayStr = Strategy.repDays(alarmObj.getRepeatingAlarmDays());
+        tv_days.setText(Html.fromHtml(tvDayStr));
+
+        // set alarm on (switch is in last layout of row and element of that layout)
+        Switch s = (Switch)((LinearLayout)tr.getChildAt(childAt)).getChildAt(tr.getChildCount()-1);
+        s.setChecked(alarmObj.isAlarmSet());
+
+
+        return tr;
+    }
+
+    // this will only add layout params and design
+    @TargetApi(23)
+    private TableRow addAlarmRowDesign(TableRow tr) {
+
+        // table row params
+        TableRow.LayoutParams trParam= new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,TableRow.LayoutParams.MATCH_PARENT,6.0f);
+        tr.setLayoutParams(trParam);
+        // set row bg color
+        tr.setBackgroundColor(getResources().getColor(R.color.mainRowBackground));
+        tr.setPadding(5,2,0,2);
+
+/* first layout in the row */
+
+        int childAt = 0;
+
+        // vertical layout params
+        LinearLayout linear_vertical_layout = (LinearLayout) tr.getChildAt(childAt);
+        TableRow.LayoutParams lvParam = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int) getResources().getDimension(R.dimen.alarm_row_height),2.0f);
+        linear_vertical_layout.setLayoutParams(lvParam);
+
+        // time text view params
+        TextView tv_time = (TextView) ((LinearLayout)tr.getChildAt(childAt)).getChildAt(0);
+        LinearLayout.LayoutParams tvTimeParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT,2.0f);
+        tv_time.setLayoutParams(tvTimeParam);
+        tv_time.setTextAppearance(R.style.TextAppearance_AppCompat);
+
+        // title text view params
+        TextView tv_title = (TextView) ((LinearLayout)tr.getChildAt(childAt)).getChildAt(tr.getChildCount()-1);
+        LinearLayout.LayoutParams tvTitleParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,LinearLayout.LayoutParams.WRAP_CONTENT,2.0f);
+        tv_title.setLayoutParams(tvTitleParam );
+
+/* second layout in the row */
+
+        childAt = 1;
+
+        // horizontal layout params
+        LinearLayout linear_horizontal_layout = (LinearLayout) tr.getChildAt(childAt);
+        TableRow.LayoutParams hlParam = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int) getResources().getDimension(R.dimen.alarm_row_height), 4.0f);
+        linear_horizontal_layout.setLayoutParams(hlParam);
+
+        // rep days text view params
+        TextView tv_days = (TextView) ((LinearLayout)tr.getChildAt(childAt)).getChildAt(0);
+        LinearLayout.LayoutParams tvDayParam = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.WRAP_CONTENT,LinearLayout.LayoutParams.MATCH_PARENT,3.0f);
+        tv_days.setLayoutParams(tvDayParam );
+        tv_days.setGravity(Gravity.TOP | Gravity.RIGHT);
+
+        // switch params
+
+
+        return tr;
+    }
+
+    /**
+     * Function: Creates a separate table row that has a horizontal layout of a small height, which acts as lower border for each row.
+     *           One of these rows should be added whenever a new alarm row is created.
+     *           All these Rows will have tag = "border-row"
+     * Return: A table row with tag = "border-row"
+     */
+    protected TableRow createLowerBorderRow() {
+        LinearLayout hr_layout = new LinearLayout(mainAlarmActivity);
+        hr_layout .setOrientation(LinearLayout.HORIZONTAL);
+        TableRow.LayoutParams lrParam = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT,  (int) getResources().getDimension(R.dimen.table_row_lower_border),6.0f);
+        hr_layout.setLayoutParams(lrParam);
+        hr_layout.setBackgroundColor(getResources().getColor(R.color.darker_grey));
+
+        TableRow tr = new TableRow(mainAlarmActivity);
+        tr.setTag("border-row");
+        tr.addView(hr_layout);
+        return tr;
+    }
 
 
 
