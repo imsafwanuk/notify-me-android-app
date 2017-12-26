@@ -3,4 +3,4 @@ have to consider all situations regarding time, ways users will get into 1 fragm
 deconstructors in java
 efficient search of unique id's = static queue to hold free ids
 object pooling pattern to limit creation of objects (not implemented yet)
-
+Strategy pattern (showing repeating days using strategy class)
