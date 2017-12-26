@@ -1,4 +1,4 @@
-# one-time-android-alarm
+# Notify Me android app
 an alarm app for androids where the time changes relative do daylight savings hours.
 
 #docs
