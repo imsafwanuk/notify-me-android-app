@@ -2,6 +2,7 @@ package com.example.safwan.notifyme;
 
 import android.annotation.TargetApi;
 import android.app.AlarmManager;
+import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -71,11 +72,22 @@ public class NotifyService extends BroadcastReceiver {
         System.out.printf("Alarm notification for id: %d at time %s\n" +
                 "title: %s, description: %s, location: %s\n", id, alarmObj.getTimeString(), alarmObj.getTitle(), alarmObj.getDescription(), alarmObj.getLocation());
 
+        // build notification title
+        String notificationTitle = "";
+        if(alarmObj.getTitle().equals(""))
+            notificationTitle += "Notifying you";
+        else
+            notificationTitle += alarmObj.getTitle();
+
+        notificationTitle += " - " + alarmObj.getTimeString();
+
+        String notifiactionContent = alarmObj.getDescription();
+
         // send notification
         if (Build.VERSION.SDK_INT >= 26)
-            notifyAndroidO(context, alarmObj);
+            notifyAndroidO(context, alarmObj.getAlarmId() ,notificationTitle,notifiactionContent);
         else {
-            notifyAndroidN(context, alarmObj);
+            notifyAndroidN(context, alarmObj.getAlarmId(), notificationTitle,notifiactionContent);
         }
 
     }
@@ -95,7 +107,7 @@ public class NotifyService extends BroadcastReceiver {
      *
      * Return: long: shortestInterval, this gives the time when the next alarm is due.
      */
-    @TargetApi(24)
+
     public long setAlarm(Context context, int id, Bundle bundle, boolean isFromSystem)
     {
         Alarm alarmObj = bundle.getParcelable("alarmObj");
@@ -176,21 +188,21 @@ public class NotifyService extends BroadcastReceiver {
 
 
     // maybe needed later for android Oreo.
-    private void notifyAndroidO(Context context, Alarm alarmObj) {
+    private void notifyAndroidO(Context context, int id, String notificationTitle, String notifiactionContent) {
         if (Build.VERSION.SDK_INT < 26)
             return;
         System.out.printf("In these channels\n");
         System.out.printf("Out these channels\n");
         NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
         // The id of the channel.
-        String id = "my_channel_01";
+        String channelId = "my_channel_01";
         // The user-visible name of the channel.
         CharSequence name = "my channel";
         // The user-visible description of the channel.
         String description = "My description";
         int importance = NotificationManager.IMPORTANCE_HIGH;
 
-        NotificationChannel mChannel = new NotificationChannel(id, name, importance);
+        NotificationChannel mChannel = new NotificationChannel(channelId , name, importance);
         // Configure the notification channel.
         mChannel.setDescription(description);
         mChannel.enableLights(true);
@@ -201,26 +213,36 @@ public class NotifyService extends BroadcastReceiver {
         mChannel.setVibrationPattern(new long[]{100, 200, 300, 400, 500, 400, 300, 200, 400});
         mNotificationManager.createNotificationChannel(mChannel);
 
-        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, id)
+        CharSequence des = notifiactionContent;
+        NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context, channelId )
                 .setSmallIcon(R.drawable.notification_icon)
-                .setContentTitle(alarmObj.getTitle())
-                .setContentText(alarmObj.getDescription());
+                .setContentTitle(notificationTitle)
+                .setContentText(notifiactionContent)
+                .setColor((int) R.color.myColorAccent)
+//                .setLargeIcon(R.drawable.notification_icon)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(des));
 
-        mNotificationManager.notify(alarmObj.getAlarmId(), mBuilder.build());
+
+        mNotificationManager.notify(id, mBuilder.build());
     }
 
 
     // android api < 26
-    private void notifyAndroidN(Context context, Alarm alarmObj) {
+    private void notifyAndroidN(Context context, int id, String notificationTitle, String notifiactionContent) {
+        CharSequence des = notifiactionContent;
+
         NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(context)
                 .setSmallIcon(R.drawable.notification_icon)
-                .setContentTitle(alarmObj.getTitle())
-                .setContentText(alarmObj.getDescription())
+                .setContentTitle(notificationTitle)
+                .setContentText(notifiactionContent)
+                .setColor((int) R.color.myColorAccent)
+//                .setLargeIcon(R.drawable.notification_icon)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(des))
                 .setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION))
                 .setAutoCancel(true);
 
         NotificationManager mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-        mNotificationManager.notify(alarmObj.getAlarmId(), mBuilder.build());
+        mNotificationManager.notify(id, mBuilder.build());
 
     }
 
