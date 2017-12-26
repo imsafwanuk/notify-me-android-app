@@ -11,6 +11,13 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/refresh"
+        android:checkable="false"
+        android:orderInCategory="100"
+        android:title="Refresh"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/settings"
         android:checkable="false"
         android:orderInCategory="100"

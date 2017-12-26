@@ -1,3 +1,8 @@
 <resources>
     <dimen name="fab_margin">16dp</dimen>
+    <dimen name="table_row_lower_border">2dp</dimen>
+    <dimen name="alarm_row_height">45dp</dimen>
+    <dimen name="location_header_height">40dp</dimen>
+    <dimen name="height_down_arrow_location">20dp</dimen>
+    <dimen name="height_location_child_row">100dp</dimen>
 </resources>
