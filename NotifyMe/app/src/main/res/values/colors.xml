@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#3F51B5</color>
+    <color name="colorPrimary">#3b5998</color>
     <color name="myColorPrimary">#11a431</color>
     <color name="myColorPrimaryDark">#045637</color>
     <color name="colorPrimaryDark">#303F9F</color>
@@ -9,8 +9,9 @@
     <color name="mainRowBackground">#437eed96</color>
     <color name="green">#12ff01</color>
     <color name="darker_grey">#A9A9A9</color>
-    <color name="white">#f3f8f8</color>
+    <color name="white">#fefefe</color>
     <color name="black">#FF000000</color>
     <color name="whitegrey">#FFF2F2F2</color>
     <color name="child_location_rows">#21f1ec90</color>
+    <color name="dst_dialog_bg">#0b7eed96</color>
 </resources>

@@ -1,4 +1,4 @@
-package com.example.safwan.notifyme;
+package com.karim.safwan.notifyme;
 
 import org.junit.Test;
 

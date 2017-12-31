@@ -1,4 +1,4 @@
-package com.example.safwan.notifyme;
+package com.karim.safwan.notifyme;
 
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -20,14 +20,14 @@ import java.util.TimeZone;
 
 public class Alarm implements Parcelable, Cloneable {
 
-/** Final Variables**/
+    /** Final Variables**/
     public static final int INSTANCE_LIMIT = 100;    // can only have this many diff alarm instances.
 
-/** Static Variables**/
+    /** Static Variables**/
     private static int instanceCount = 0;
     private static Queue<Integer> alarmIdQ = new LinkedList<Integer>(); // contains unique id.
 
-/** Plain Old Variables**/
+    /** Plain Old Variables**/
     private boolean alarmSet;   // alarm on or off ? true if on.
     private int hr, min, am_pm;    //0 = am, 1 = pm
     private boolean changeWithDayLightSavings;  // should time change with DST or should it stay fixed? true if time should change.
@@ -36,6 +36,18 @@ public class Alarm implements Parcelable, Cloneable {
     private int alarmId;
     private boolean onDstTime;  // will be true if time was saved while DST was on, otherwise false.
     int[] repeatingAlarmDaysList;    // contains int value of Caldendar.DAYS; says what days alarm is repeated.
+
+
+    public boolean isRepeat() {
+        return isRepeat;
+    }
+
+    public void setRepeat(boolean repeat) {
+        isRepeat = repeat;
+    }
+
+    private boolean isRepeat;
+
 
 
     /**
@@ -100,7 +112,7 @@ public class Alarm implements Parcelable, Cloneable {
         alarmIdQ.add(a.getAlarmId());
         if(instanceCount <= 0)
             System.out.println("Error in ALARM!");
-            instanceCount--;
+        instanceCount--;
         a = null;
     }
 
@@ -108,6 +120,7 @@ public class Alarm implements Parcelable, Cloneable {
 
     Alarm(Parcel parcel) {
 
+        isRepeat = (parcel.readInt() == 1 ? true : false);
         alarmId = parcel.readInt();
         alarmSet = (parcel.readInt() == 1 ? true : false);
         hr = parcel.readInt();
@@ -133,6 +146,7 @@ public class Alarm implements Parcelable, Cloneable {
     @Override
     public void writeToParcel(Parcel parcel, int i) {
 
+        parcel.writeInt(isRepeat ? 1 : 0);
         parcel.writeInt(alarmId);
         parcel.writeInt(alarmSet ? 1 : 0);
         parcel.writeInt(hr);
@@ -168,8 +182,8 @@ public class Alarm implements Parcelable, Cloneable {
     /** Start cloneable interface stuff **/
     @Override
     public Alarm clone() throws CloneNotSupportedException {
-         Alarm a = (Alarm) super.clone();
-         a.giveAlarmId();
+        Alarm a = (Alarm) super.clone();
+        a.giveAlarmId();
         System.out.println("cloned id: " +a.getAlarmId());
         return a;
     }
@@ -248,12 +262,17 @@ public class Alarm implements Parcelable, Cloneable {
      *             Also sets onDstTime to true if time was saved on DST time.
      * Stimuli: Called when alarm time is changed.
      */
-    public void setAlarmTime(int nHr, int nMin) {
-        Calendar ca = Calendar.getInstance();
-        ca.set(Calendar.HOUR_OF_DAY, nHr);
-        ca.set(Calendar.MINUTE, nMin);
-        this.alarmTime.setTimeInMillis(ca.getTimeInMillis());
-        this.setOnDstTime();
+//    public void setAlarmTime(int nHr, int nMin) {
+//        Calendar ca = Calendar.getInstance();
+//        ca.set(Calendar.HOUR_OF_DAY, nHr);
+//        ca.set(Calendar.MINUTE, nMin);
+//        this.alarmTime.setTimeInMillis(ca.getTimeInMillis());
+//        this.setOnDstTime();
+//    }
+
+    public void setAlarmTimeInMIllis(long time) {
+        alarmTime.setTimeInMillis(time);
+        alarmTime.set(Calendar.SECOND, 0);
     }
 
     public String getTimeString() {
@@ -264,19 +283,6 @@ public class Alarm implements Parcelable, Cloneable {
         return this.alarmTime.getTimeInMillis();
     }
 
-    /**
-     * Function: Checks if there's any day in the alarmDaysList
-     * Return: If list contains >= 1 then return true,
-     *         else false.
-     */
-    public boolean isOnRepeat() {
-        for (int i : repeatingAlarmDaysList) {
-            if( i == 1)
-                return true;
-        }
-        return false;
-
-    }
 
     public int getAlarmId() {
         return alarmId;

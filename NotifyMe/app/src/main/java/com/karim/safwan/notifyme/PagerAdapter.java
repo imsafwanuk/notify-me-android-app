@@ -1,4 +1,4 @@
-package com.example.safwan.notifyme;
+package com.karim.safwan.notifyme;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;

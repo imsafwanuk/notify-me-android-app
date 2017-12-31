@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.example.safwan.onetimealarm.StartupActivity">
+    tools:context="com.karim.safwan.onetimealarm.StartupActivity">
 
     <item
         android:id="@+id/delete_alarm"
@@ -14,13 +14,13 @@
         android:id="@+id/refresh"
         android:checkable="false"
         android:orderInCategory="100"
-        android:title="Refresh"
+        android:title="Apply Day Light Saving Change"
         app:showAsAction="never" />
 
-    <item
+    <!--<item
         android:id="@+id/settings"
         android:checkable="false"
         android:orderInCategory="100"
         android:title="Settings"
-        app:showAsAction="never" />
+        app:showAsAction="never" />-->
 </menu>

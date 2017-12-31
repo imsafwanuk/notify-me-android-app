@@ -1,6 +1,7 @@
-package com.example.safwan.notifyme;
+package com.karim.safwan.notifyme;
 
 
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TableLayout;
+import android.widget.Toast;
 
 
 public class StartupActivity extends AppCompatActivity implements MainAlarmFragment.OnFragmentInteractionListener, LocationFragment.OnFragmentInteractionListener{
@@ -75,20 +77,18 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
                 }
                 return true;
 
-            case R.id.settings:
-                System.out.println("settings ops");
-                return true;
-
             case R.id.action_delete_alarm:
                 tabIndex = startup_tabLayout.getSelectedTabPosition();
                 // change option menu to remove delete option and view
                 if(tabIndex == 0){
                     removeDeleteMenu();
+                    toastMessage("Deleting selected alarms...", Toast.LENGTH_SHORT);
                 }
                 return true;
 
             case R.id.refresh:
                 mainAlarmFragmentObj.checkDstAlarms();
+                toastMessage("Refreshing all alarms...", Toast.LENGTH_SHORT);
                 return true;
 
             default:
@@ -112,7 +112,8 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
 
 
     public boolean onPrepareOptionsMenu(Menu menu) {
-        menu.clear();
+        if(menu != null)
+            menu.clear();
 
         if(optionMenuFlag == OPTION_MENU_FLAG_LOCATION) {
             ActivityCompat.invalidateOptionsMenu(StartupActivity.this);
@@ -157,6 +158,13 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
             optionMenuFlag = OPTION_MENU_FLAG_NONE;
             super.onBackPressed();
         }
+    }
+
+    public void toastMessage(String str, int duration) {
+        Context context = StartupActivity.this;
+        CharSequence text = str;
+        Toast toast = Toast.makeText(context, text, duration);
+        toast.show();
     }
 
     /**-------- Tab layout stuff --------**/

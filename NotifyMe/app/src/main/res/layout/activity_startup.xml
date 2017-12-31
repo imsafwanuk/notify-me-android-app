@@ -5,7 +5,7 @@
     android:id="@+id/startup_relative_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.safwan.notifyme.StartupActivity">
+    tools:context="com.karim.safwan.notifyme.StartupActivity">
 
 
     <android.support.design.widget.TabLayout

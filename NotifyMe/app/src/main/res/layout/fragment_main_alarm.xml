@@ -5,7 +5,7 @@
     android:id="@+id/startup_relative_layout"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.example.safwan.notifyme.MainAlarmFragment">
+    tools:context="com.karim.safwan.notifyme.MainAlarmFragment">
 
 
     <ScrollView
@@ -84,6 +84,7 @@
         android:layout_alignParentEnd="true"
         android:layout_marginBottom="22dp"
         android:layout_marginEnd="23dp"
+        android:layout_marginTop="20dp"
         android:clickable="true"
         android:tint="@color/white"
         app:fabSize="normal"

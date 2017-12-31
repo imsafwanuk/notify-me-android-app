@@ -4,11 +4,12 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    tools:context="com.example.safwan.notifyme.LocationFragment">
+    tools:context="com.karim.safwan.notifyme.LocationFragment">
 
     <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:layout_marginBottom="10dp">
 
         <TableLayout
             android:id="@+id/location_table"
@@ -132,6 +133,7 @@
         </TableRow>
 -->
         </TableLayout>
+
     </ScrollView>
 
 </RelativeLayout>

@@ -1,4 +1,4 @@
-package com.example.safwan.notifyme;
+package com.karim.safwan.notifyme;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -7,6 +7,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Html;
+import android.text.InputFilter;
+import android.text.method.ScrollingMovementMethod;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,7 +19,9 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 
 public class LocationFragment extends Fragment {
@@ -78,7 +82,7 @@ public class LocationFragment extends Fragment {
         location_table = locationActivity .findViewById(R.id.location_table);
         // getAllLocation();
         location_table.removeAllViews();
-        createLocationRows();
+        setUpLocationRows();
     }
 
 
@@ -96,6 +100,14 @@ public class LocationFragment extends Fragment {
         }
     }
 
+    private void setUpLocationRows() {
+        for(String s : locationMap.keySet()) {
+            if(!s.equals("Empty Locations"))
+                createLocationRows(s);
+        }
+        if(locationMap.containsKey("Empty Locations"))
+            createLocationRows("Empty Locations");
+    }
 
 
     /**
@@ -103,8 +115,7 @@ public class LocationFragment extends Fragment {
      * Stimuli: Called by setLocationHashMap.
      * Layout of header rows: TV/TV/ImgV
      */
-    private void createLocationRows() {
-            for(String s : locationMap.keySet()) {
+    private void createLocationRows(String s) {
             // create header rows
             TableRow tr = new TableRow(locationActivity);
             tr.setOnClickListener(new View.OnClickListener() {
@@ -154,7 +165,6 @@ public class LocationFragment extends Fragment {
                 System.out.println("Child count: " + location_table.getChildCount());
             }
             isExpandedMap.put(s,false);
-        }
     }
 
 
@@ -216,8 +226,17 @@ public class LocationFragment extends Fragment {
         descriptionView.setText(alarmObj.getDescription());
         System.out.println(alarmObj.getDescription());
         // add rep days
-        String tvDayStr = Strategy.repDays(alarmObj.getRepeatingAlarmDays());
-        repeatingDaysView.setText(Html.fromHtml(tvDayStr));
+        String tvDayStr;
+        if(alarmObj.isRepeat()){
+            tvDayStr = Strategy.repDays(alarmObj.getRepeatingAlarmDays());
+            repeatingDaysView.setText(Html.fromHtml(tvDayStr));
+        }
+        else{
+            Calendar ca = Calendar.getInstance();
+            ca.setTimeInMillis(alarmObj.getTimeMillis());
+            tvDayStr = new SimpleDateFormat("E, dd/MM/yyyy").format(ca.getTime());
+            repeatingDaysView.setText(tvDayStr);
+        }
 
 
         // add elements to parents in order
@@ -282,7 +301,7 @@ public class LocationFragment extends Fragment {
 
         // main vertical layout
         LinearLayout mainVL = (LinearLayout) tr.getChildAt(0);
-        TableRow.LayoutParams lvParams = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int) locationActivity.getResources().getDimension(R.dimen.height_location_child_row),6.0f);
+        TableRow.LayoutParams lvParams = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int) locationActivity.getResources().getDimension(R.dimen.location_height_child_row),6.0f);
         lvParams.setMargins(0,0,0,4);
         mainVL.setLayoutParams(lvParams);
 
@@ -291,6 +310,7 @@ public class LocationFragment extends Fragment {
         LinearLayout firstHL = (LinearLayout) mainVL.getChildAt(0);
         LinearLayout.LayoutParams firstHLParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT, 4.0f);
         firstHL.setLayoutParams(firstHLParams);
+        firstHL.setMinimumHeight((int) locationActivity.getResources().getDimension(R.dimen.location_child_first_hl_min_height));
 
         // minor vertical layout
         LinearLayout minorVL = (LinearLayout) firstHL.getChildAt(0);
@@ -308,6 +328,9 @@ public class LocationFragment extends Fragment {
                 TextView tv_title = (TextView) minorVL.getChildAt(1);
                 LinearLayout.LayoutParams titleParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
                 tv_title.setLayoutParams(titleParams);
+                tv_title.setMaxWidth(200);
+                tv_title.setMaxLines(2);
+                tv_title.setMaxHeight((int) locationActivity.getResources().getDimension(R.dimen.location_child_title_max_height));
 
 
 
@@ -330,6 +353,10 @@ public class LocationFragment extends Fragment {
             tv_description.setPadding(0,0,0,5);
             tv_description.setGravity(Gravity.LEFT | Gravity.CENTER);
             tv_description.setMaxWidth(200);
+            tv_description.setMaxLines(5);
+            tv_description.setVerticalScrollBarEnabled(true);
+            tv_description.setMovementMethod(new ScrollingMovementMethod());
+            tv_description.setMaxHeight((int) locationActivity.getResources().getDimension(R.dimen.location_child_descrip_max_height));
 
 
 /* third horizontal layout */

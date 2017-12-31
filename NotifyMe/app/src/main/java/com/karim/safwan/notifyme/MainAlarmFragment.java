@@ -1,4 +1,4 @@
-package com.example.safwan.notifyme;
+package com.karim.safwan.notifyme;
 
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -30,7 +30,9 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
 import java.lang.reflect.Type;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 
 /**
@@ -124,6 +126,7 @@ public class MainAlarmFragment extends Fragment {
                 System.out.println("Row added back");
             }
         }
+        addPaddedRow();
     }
 
 
@@ -157,6 +160,14 @@ public class MainAlarmFragment extends Fragment {
         saveData();
     }
 
+
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        // turn off any past alarms
+        turnOffPastAlarms();
+    }
 
     /**
      * Function: Saves alarm objects in alarm object list in Json data.
@@ -254,6 +265,7 @@ public class MainAlarmFragment extends Fragment {
             System.out.println("Back to startup from save click.");
             Bundle returnBundle = data.getExtras();
             Alarm parceledAlarm = returnBundle.getParcelable("alarm");
+
             insertAlarm(parceledAlarm);
 
         }else if (requestCode == 2 && resultCode == Activity.RESULT_OK) {
@@ -296,6 +308,7 @@ public class MainAlarmFragment extends Fragment {
         LinearLayout ll = (LinearLayout) tr.getChildAt(tr.getChildCount()-1);
         Switch switchS = (Switch) ll.getChildAt(tr.getChildCount()-1);
         switchS.callOnClick();
+        addPaddedRow();
         System.out.println("Row inserted");
     }
 
@@ -362,6 +375,8 @@ public class MainAlarmFragment extends Fragment {
                 bundle.putParcelable("alarmObj", alarmObj);
                 bundle.putParcelableArray("alarm-array", alarmObjList);
                 long intervalTimeInMillis = notifyServiceManager.setAlarm(mainAlarmActivity, alarmObj.getAlarmId(), bundle, NotifyService.APP_TIME_UPDATE);
+                if(intervalTimeInMillis < 0)
+                    s.setChecked(false);
                 toastAlarmInterval(intervalTimeInMillis);
             } else {
                 notifyServiceManager.deleteAllAlarmFor(mainAlarmActivity, alarmObj.getAlarmId());
@@ -371,8 +386,13 @@ public class MainAlarmFragment extends Fragment {
     };
 
     private void toastAlarmInterval(long interval) {
+        String toastStr;
+        if(interval == -1) {
+            toastStr = "Please select a valid date.";
+        }else {
+            toastStr  = "Will notify at " +new java.text.SimpleDateFormat("h:mm a E,\n\t\t\t\t\t\tdd-MM-yyyy").format(interval);
+        }
 
-        String toastStr  = "Will notify at " +new java.text.SimpleDateFormat("h:mm a E,\n\t\t\t\t\t\tdd-MM-yyyy").format(interval);
         toastMessage(toastStr, Toast.LENGTH_LONG);
     }
 
@@ -432,8 +452,10 @@ public class MainAlarmFragment extends Fragment {
         @Override
         public boolean onLongClick(View view) {
             dialogViewIndex = alarm_table.indexOfChild(view);
+            View title = View.inflate(mainAlarmActivity, R.layout.dialog_header_options_copy_alarm,null);
             AlertDialog.Builder builder = new AlertDialog.Builder(mainAlarmActivity);
-            builder.setTitle("Options").setItems(R.array.planets_array, new DialogInterface.OnClickListener() {
+            builder.setCustomTitle(title)
+                    .setItems(R.array.planets_array, new DialogInterface.OnClickListener() {
                         public void onClick(DialogInterface dialog, int itemIndex) {
                             if(itemIndex == 0) {
                                 // copy alarm with different time
@@ -485,14 +507,16 @@ public class MainAlarmFragment extends Fragment {
      * Stimuli: Called when delete options manu is clicked.
      */
     private void removeSelectedAlarms() {
-        for(int i = alarm_table.getChildCount() - 2; i >= 0; i-=2) {
-            TableRow tr = (TableRow) alarm_table.getChildAt(i);
-            if(tr.getChildAt(0) instanceof CheckBox) {
-                CheckBox cb = (CheckBox) tr.getChildAt(0);
+        for(int i = alarm_table.getChildCount(); i >= 0; i--) {
+            if (alarm_table.getChildAt(i)!= null && Strategy.isInteger( alarm_table.getChildAt(i).getTag().toString() ) ) {
+                TableRow tr = (TableRow) alarm_table.getChildAt(i);
+                if (tr.getChildAt(0) instanceof CheckBox) {
+                    CheckBox cb = (CheckBox) tr.getChildAt(0);
 
-                // if checked, then delete row
-                if(cb.isChecked()) {
-                    removeAlarm(i);
+                    // if checked, then delete row
+                    if (cb.isChecked()) {
+                        removeAlarm(i);
+                    }
                 }
             }
         }
@@ -562,11 +586,13 @@ public class MainAlarmFragment extends Fragment {
      * Stimuli: Launches when delete button is pressed.
      */
     protected void removeDeleteBoxes() {
-        for(int i = 0; i < alarm_table.getChildCount(); i+=2) {
-            TableRow tr = (TableRow) alarm_table.getChildAt(i);
+        for(int i = 0; i < alarm_table.getChildCount(); i++) {
+            if (Strategy.isInteger( alarm_table.getChildAt(i).getTag().toString() ) ) {
+                TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
-            if(tr.getChildAt(0) instanceof CheckBox) {
-                tr.removeViewAt(0);
+                if (tr.getChildAt(0) instanceof CheckBox) {
+                    tr.removeViewAt(0);
+                }
             }
         }
     }
@@ -578,15 +604,17 @@ public class MainAlarmFragment extends Fragment {
      *          If called after, then TableRow will have 3 children instead of 2.
      */
     protected void  disableOnOffSwitch() {
-        for(int i = 0; i < alarm_table.getChildCount(); i+=2) {
-            TableRow tr = (TableRow) alarm_table.getChildAt(i);
+        for(int i = 0; i < alarm_table.getChildCount(); i++) {
+            if (Strategy.isInteger( alarm_table.getChildAt(i).getTag().toString() ) ) {
+                TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
-            if (tr.getChildAt(1) instanceof LinearLayout) {
-                LinearLayout ll = (LinearLayout) tr.getChildAt(1);
-                if(ll.getChildAt(1) instanceof Switch) {
-                    Switch s = (Switch) ll.getChildAt(ll.getChildCount() - 1);
-                    System.out.println(s.getText());
-                    s.setVisibility(View.INVISIBLE);
+                if (tr.getChildAt(1) instanceof LinearLayout) {
+                    LinearLayout ll = (LinearLayout) tr.getChildAt(1);
+                    if (ll.getChildAt(1) instanceof Switch) {
+                        Switch s = (Switch) ll.getChildAt(ll.getChildCount() - 1);
+                        System.out.println(s.getText());
+                        s.setVisibility(View.INVISIBLE);
+                    }
                 }
             }
         }
@@ -599,15 +627,17 @@ public class MainAlarmFragment extends Fragment {
      *          If called before, then TableRow will have 3 children instead of 2.
      */
     protected void  enableOnOffSwitches() {
-        for (int i = 0; i < alarm_table.getChildCount(); i+=2) {
-            TableRow tr = (TableRow) alarm_table.getChildAt(i);
+        for (int i = 0; i < alarm_table.getChildCount(); i++) {
+            if (Strategy.isInteger( alarm_table.getChildAt(i).getTag().toString() ) ) {
+                TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
-            if (tr.getChildAt(1) instanceof LinearLayout) {
-                LinearLayout ll = (LinearLayout) tr.getChildAt(1);
-                if(ll.getChildAt(1) instanceof Switch) {
-                    Switch s = (Switch) ll.getChildAt(ll.getChildCount() - 1);
-                    System.out.println(s.getText());
-                    s.setVisibility(View.VISIBLE);
+                if (tr.getChildAt(1) instanceof LinearLayout) {
+                    LinearLayout ll = (LinearLayout) tr.getChildAt(1);
+                    if (ll.getChildAt(1) instanceof Switch) {
+                        Switch s = (Switch) ll.getChildAt(ll.getChildCount() - 1);
+                        System.out.println(s.getText());
+                        s.setVisibility(View.VISIBLE);
+                    }
                 }
             }
         }
@@ -619,12 +649,14 @@ public class MainAlarmFragment extends Fragment {
      * Stimuli: Launches when an alarm row is long pressed.
      */
     protected void addDeleteBoxes() {
-        for(int i = 0; i < alarm_table.getChildCount(); i+=2) {
-            TableRow tr = (TableRow) alarm_table.getChildAt(i);
+        for(int i = 0; i < alarm_table.getChildCount(); i++) {
+            if (Strategy.isInteger(alarm_table.getChildAt(i).getTag().toString())) {
+                TableRow tr = (TableRow) alarm_table.getChildAt(i);
 
-            // create new checkbox
-            CheckBox cb = new CheckBox(mainAlarmActivity);
-            tr.addView(cb,0);
+                // create new checkbox
+                CheckBox cb = new CheckBox(mainAlarmActivity);
+                tr.addView(cb, 0);
+            }
         }
     }
 
@@ -668,7 +700,10 @@ public class MainAlarmFragment extends Fragment {
         locationMap = new HashMap<String, ArrayList>();
         for(Alarm a : alarmObjList) {
             if( a != null ) {
-                String location = a.getLocation();
+                String location = "Empty Locations";
+                if(a.getLocation().length() > 0)
+                    location = a.getLocation().substring(0, 1).toUpperCase() + a.getLocation().substring(1);
+
                 System.out.println("Loca: " + location);
                 if(!location.isEmpty() && !locationMap.containsKey(location)) {
                     locationMap.put(location,new ArrayList<Alarm>());
@@ -720,14 +755,13 @@ public class MainAlarmFragment extends Fragment {
         }
 
         // need to update rows as well.
-        System.out.println("border row: okol");
-        for( int i =0; i < alarm_table.getChildCount(); i+=2 ) {
-//            if(!alarm_table.getChildAt(i).getTag().equals("border-row")) {
-                Alarm a = alarmObjList[(int)alarm_table.getChildAt(i).getTag()];
-                if(a.isChangeWithDayLightSavings()) {
+        for( int i =0; i < alarm_table.getChildCount(); i++ ) {
+            if (Strategy.isInteger( alarm_table.getChildAt(i).getTag().toString() ) ) {
+                Alarm a = alarmObjList[(int) alarm_table.getChildAt(i).getTag()];
+                if (a.isChangeWithDayLightSavings()) {
                     updateAlarm(a, i, true);
                 }
-//            }
+            }
         }
     }
 
@@ -814,8 +848,17 @@ public class MainAlarmFragment extends Fragment {
 
         // add rep days
         TextView tv_days = (TextView) ((LinearLayout)tr.getChildAt(childAt)).getChildAt(0);
-        String tvDayStr = Strategy.repDays(alarmObj.getRepeatingAlarmDays());
-        tv_days.setText(Html.fromHtml(tvDayStr));
+        String tvDayStr;
+        if(alarmObj.isRepeat()){
+            tvDayStr = Strategy.repDays(alarmObj.getRepeatingAlarmDays());
+            tv_days.setText(Html.fromHtml(tvDayStr));
+        } else{
+            Calendar ca = Calendar.getInstance();
+            ca.setTimeInMillis(alarmObj.getTimeMillis());
+            tvDayStr = new SimpleDateFormat("E, dd/MM/yyyy").format(ca.getTime());
+            tv_days.setText(tvDayStr);
+        }
+
 
         // set alarm on (switch is in last layout of row and element of that layout)
         Switch s = (Switch)((LinearLayout)tr.getChildAt(childAt)).getChildAt(tr.getChildCount()-1);
@@ -896,8 +939,67 @@ public class MainAlarmFragment extends Fragment {
         return tr;
     }
 
+    /**
+     * Function: Sole purpose is to give extra space at end of table
+     * Stimuli: Calleed every time a new row is added.
+     */
+    private void addPaddedRow() {
+        TableRow tr = null;
+
+        for(int i = 0; i < alarm_table.getChildCount(); i++) {
+            // existing padded row found
+            if(alarm_table.getChildAt(i).getTag().toString().equals("padded-row")) {
+                tr = (TableRow) alarm_table.getChildAt(i);
+                alarm_table.removeViewAt(i);
+            }
+        }
+
+        // padded row not found, so create and add
+        if(tr == null) {
+            tr = new TableRow(mainAlarmActivity);
+            TableRow.LayoutParams trParam= new TableRow.LayoutParams(TableRow.LayoutParams.MATCH_PARENT,TableRow.LayoutParams.MATCH_PARENT,6.0f);
+            tr.setLayoutParams(trParam);
+            tr.setTag("padded-row");
+
+            LinearLayout ll = new LinearLayout(mainAlarmActivity);
+            TableRow.LayoutParams llParam = new TableRow.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, (int) getResources().getDimension(R.dimen.alarm_row_padded));
+            ll.setLayoutParams(llParam);
+
+            tr.addView(ll);
+        }
+
+        alarm_table.addView(tr);
+    }
 
 
+    /**
+     * Function: Checks if any alarm with specific date is in the past compared to the current system time.
+     *           Then turn it off, if its not off already.
+     *           This however doesn't turn on any off alarms, if system time is set to previous dates.
+     *
+     * Stimuli: Called every time when fragment comes to life.
+     */
+    private void turnOffPastAlarms() {
+        for(int i = 0; i < alarm_table.getChildCount(); i++) {
+            if (Strategy.isInteger( alarm_table.getChildAt(i).getTag().toString() ) ) {
+                int index = Integer.parseInt(alarm_table.getChildAt(i).getTag().toString());
+                Alarm a = alarmObjList[index];
+                // if not on repeat then check if specific date is less than current sys time.
+                if(!a.isRepeat() && (a.getTimeMillis() - System.currentTimeMillis()) < 0) {
+                    a.setAlarmSet(false);
+
+                    TableRow tr = (TableRow) alarm_table.getChildAt(i);
+                    if (tr.getChildAt(1) instanceof LinearLayout) {
+                        LinearLayout ll = (LinearLayout) tr.getChildAt(1);
+                        if(ll.getChildAt(1) instanceof Switch) {
+                            Switch s = (Switch) ll.getChildAt(ll.getChildCount() - 1);
+                            s.setChecked(false);
+                        }
+                    }
+                }
+            }
+        }
+    }
 
 
 /** ------ Tab fragment stuff -------- **/
