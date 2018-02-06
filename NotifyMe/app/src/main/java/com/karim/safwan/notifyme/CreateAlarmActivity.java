@@ -2,13 +2,8 @@ package com.karim.safwan.notifyme;
 
 import android.annotation.TargetApi;
 import android.app.DatePickerDialog;
-import android.app.TimePickerDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.graphics.Color;
-import android.graphics.Point;
-import android.graphics.drawable.ColorDrawable;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -24,7 +19,6 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.View;
 import android.widget.Button;
-import android.widget.CompoundButton;
 import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -81,13 +75,14 @@ public class CreateAlarmActivity extends AppCompatActivity {
         mActionBar.setCustomView(customView);
         mActionBar.setDisplayShowCustomEnabled(true);
 
-        Calendar classCalendar = Calendar.getInstance();
+        Calendar classCalendar = Calendar.getInstance();    // to be used as a global variable within this class only, to carry objects.
         classCalendar.setTimeInMillis(System.currentTimeMillis());
         // set current min + 1
         classCalendar.setTimeInMillis(classCalendar.getTimeInMillis()+60000);
 
-        timePicker = (TimePicker) findViewById(R.id.timePicker);
+        timePicker = findViewById(R.id.timePicker);
         timePicker.setMinute(classCalendar.get(Calendar.MINUTE));
+        // always start with pm, and let user change to am if needed.
         if(classCalendar.get(Calendar.HOUR_OF_DAY) <= 11) {
             classCalendar.set(Calendar.HOUR_OF_DAY, classCalendar.get(Calendar.HOUR_OF_DAY) + 12);
         }
@@ -97,13 +92,14 @@ public class CreateAlarmActivity extends AppCompatActivity {
         repeat_switch = findViewById(R.id.repeat_switch);
         repeat_switch.setOnClickListener(repeatChangeListener);
         et_title = findViewById(R.id.et_title);
+
+        // get device relative max char limit.
         Display display = getWindowManager().getDefaultDisplay();
         DisplayMetrics outMetrics = new DisplayMetrics ();
         display.getMetrics(outMetrics);
         float density  = getResources().getDisplayMetrics().density;
         int dpWidth  = (int)(outMetrics.widthPixels / density);
         final int maxTitleLength = dpWidth / 12;
-        System.out.println("device with "+dpWidth);
         et_title.setFilters(new InputFilter[] {new InputFilter.LengthFilter(maxTitleLength)});
         et_title.addTextChangedListener(new TextWatcher()
         {
@@ -152,6 +148,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
             }
         });
 
+        // get ref to all needed objects
         et_description = findViewById(R.id.et_description);
         switch_dayLight = findViewById(R.id.switch_dayLight);
         days_linear_layout = findViewById(R.id.days_linear_layout);
@@ -160,9 +157,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
         day_row = findViewById(R.id.day_row);
         alarmObj = null;
 
-
-
-
+        // set todays date in calendar and text view
         date_picker_year = classCalendar.get(Calendar.YEAR);
         date_picker_month = classCalendar.get(Calendar.MONTH);
         date_picker_date = classCalendar.get(Calendar.DAY_OF_MONTH);
@@ -176,10 +171,8 @@ public class CreateAlarmActivity extends AppCompatActivity {
         globalReceiveIntent = getIntent();
 
         if (globalReceiveIntent.getStringExtra("alarmAction").equals("create-alarm")) {
+            // no work to do if completely new notification.
             System.out.println("create new alarm");
-//            alarmObj = alarmObj = Alarm.getAlarmInstance();
-//            alarmObj.setAlarmTimeInMIllis(System.currentTimeMillis());
-//            setUpSameAlarmView(alarmObj);
         } else if (globalReceiveIntent.getStringExtra("alarmAction").equals("edit-alarm")) {
             int editIndex = globalReceiveIntent.getIntExtra("editIndex", -1);
             System.out.println("edit existing alarm of index: " + editIndex);
@@ -211,9 +204,8 @@ public class CreateAlarmActivity extends AppCompatActivity {
 
     /**
      * Function: Assigns click listener to cancel and save button.
-     * And finishes activity task and returns to parent activity from where the intent came.
-     * <p>
-     * Assumption:StartActivityForResult is used to launch the intent that this class gets.
+     *           And finishes activity task and returns to parent activity from where the intent came.
+     * Assumption: StartActivityForResult is used to launch the intent that this class gets.
      * Stimuli: Called by onCreate method.
      */
     private void setupBtn() {
@@ -222,8 +214,8 @@ public class CreateAlarmActivity extends AppCompatActivity {
         dst_info_img.setOnClickListener(dstHelpDialog);
 
 
-        cancel_btn = (Button) findViewById(R.id.cancel_btn);
-        save_btn = (Button) findViewById(R.id.save_btn);
+        cancel_btn = findViewById(R.id.cancel_btn);
+        save_btn = findViewById(R.id.save_btn);
 
         cancel_btn.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -235,7 +227,6 @@ public class CreateAlarmActivity extends AppCompatActivity {
 
                 setResult(RESULT_CANCELED, saveIntent);
                 finish();
-
             }
         });
 
@@ -249,7 +240,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
                 Bundle bundleObj = saveAlarmInstance();
                 saveIntent.putExtras(bundleObj);
 
-                // if edit alarm
+                // if edit notify,then send back edit position
                 if (globalReceiveIntent.hasExtra("editIndex")) {
                     int editIndex = globalReceiveIntent.getIntExtra("editIndex", -1);
                     saveIntent.putExtra("editIndex", editIndex);
@@ -274,7 +265,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
         if (alarmObj == null)
             alarmObj = Alarm.getAlarmInstance();
 
-        alarmObj.setAlarmTimeInMIllis(getAlarmTimeInMillis());
+        alarmObj.setAlarmTimeInMillis(getAlarmTimeInMillis());
         alarmObj.setTitle(et_title.getText().toString());
         alarmObj.setDescription(et_description.getText().toString());
         alarmObj.setLocation(et_location.getText().toString());
@@ -298,6 +289,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
         return bundleObj;
     }
 
+    // gets the time set by user in millis
     private long getAlarmTimeInMillis() {
         Calendar ca = Calendar.getInstance();
         ca.set(Calendar.HOUR_OF_DAY, timePicker.getHour());
@@ -318,21 +310,12 @@ public class CreateAlarmActivity extends AppCompatActivity {
             day.setOnClickListener(repeatingDaysOnClickListener);
         }
         sun = findViewById(R.id.sun);
-//        sun.setOnClickListener(repeatingDaysOnClickListener);
         mon = findViewById(R.id.mon);
-//        mon.setOnClickListener(repeatingDaysOnClickListener);
         tue = findViewById(R.id.tue);
-//        tue.setOnClickListener(repeatingDaysOnClickListener);
         wed = findViewById(R.id.wed);
-//        wed.setOnClickListener(repeatingDaysOnClickListener);
         thu = findViewById(R.id.thu);
-//        thu.setOnClickListener(repeatingDaysOnClickListener);
         fri = findViewById(R.id.fri);
-//        fri.setOnClickListener(repeatingDaysOnClickListener);
         sat = findViewById(R.id.sat);
-//        sat.setOnClickListener(repeatingDaysOnClickListener);
-
-
     }
 
     /**
@@ -383,7 +366,6 @@ public class CreateAlarmActivity extends AppCompatActivity {
                     System.out.println("Rep days are: " + ((TextView) days_linear_layout.getChildAt(i)).getText());
 
                 }
-
             }
         } else {
             repeat_switch.setChecked(false);
@@ -440,7 +422,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
         }
     }
 
-
+    // shows help dialog
     View.OnClickListener dstHelpDialog = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
@@ -474,6 +456,11 @@ public class CreateAlarmActivity extends AppCompatActivity {
     };
 
 
+    /**
+     * Function: Checks if the set alarm time is valid or not, with respect to current time. If not valid, then alarm is set to a day later,
+     *           at the user's selected time.
+     * Stimuli: Called when time picker time is changed by user.
+     */
     private TimePicker.OnTimeChangedListener timeSetListener = new TimePicker.OnTimeChangedListener() {
 
         @Override
@@ -483,7 +470,6 @@ public class CreateAlarmActivity extends AppCompatActivity {
                 String ss = "1 Alarm time: " + ca.getTimeInMillis() + " My time: " + System.currentTimeMillis()+ " Diff: " +Long.toString(Math.abs( ca.getTimeInMillis() - System.currentTimeMillis()));
                 System.out.println(ss);
                 if(ca.getTimeInMillis() - System.currentTimeMillis() <= 0) {
-//                    ca.setTimeInMillis(ca.getTimeInMillis() + 86400000L);
                     ca.add(Calendar.DATE, 1);
                     System.out.println(new SimpleDateFormat("E, dd/MM/yyyy").format(ca.getTime()));
 
@@ -510,6 +496,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
         return arr;
     }
 
+    // changes date in text view
     private DatePickerDialog.OnDateSetListener  mDateSetListener = new DatePickerDialog.OnDateSetListener() {
         @Override
         public void onDateSet(DatePicker datePicker, int year, int month, int day) {
@@ -524,6 +511,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
         }
     };
 
+    // sets calendar theme and shows date picker.
     View.OnClickListener showCalendar = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
@@ -539,6 +527,8 @@ public class CreateAlarmActivity extends AppCompatActivity {
 
 
 
+    // if back is double pressed quickly, then exit to main activity.
+    // else show warning message dialog.
     @Override
     public void onBackPressed(){
         if (doubleBackToExitPressedOnce) {
@@ -560,6 +550,7 @@ public class CreateAlarmActivity extends AppCompatActivity {
         }, 400);
     }
 
+    // warning message dialog that gets shown when back is pressed once.
     private void showExitDialog() {
         View title = View.inflate(CreateAlarmActivity.this, R.layout.dialog_header_create_alarm_exit, null);
         AlertDialog.Builder builder = new AlertDialog.Builder(CreateAlarmActivity.this);
@@ -606,16 +597,8 @@ public class CreateAlarmActivity extends AppCompatActivity {
                     }
                 });
 
-        //        .setOnCancelListener(new DialogInterface.OnCancelListener() {
-//            @Override
-//            public void onCancel(DialogInterface dialogInterface) {
-//
-//            }
-//        })
         if(isCreateAlarmActivityRunning)
             builder.show();
-
-
     };
 
     @Override

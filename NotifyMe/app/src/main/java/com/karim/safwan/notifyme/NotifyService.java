@@ -68,10 +68,6 @@ public class NotifyService extends BroadcastReceiver {
             return;
         }
 
-        // get unique alarm id
-        int id = intent.getIntExtra("id", -1);
-
-
         // get alarm object
         byte[] bytes = intent.getByteArrayExtra("alarm");
         Alarm alarmObj = ParcelableUtil.unmarshall(bytes, Alarm.CREATOR);
@@ -86,10 +82,7 @@ public class NotifyService extends BroadcastReceiver {
 
         // check time
         long alarmTime = intent.getLongExtra("timeInMillis", 101010);
-//        String ss = "Alarm time: " + alarmTime + " My time: " + System.currentTimeMillis()+ " Diff: " +Long.toString(Math.abs( alarmTime - System.currentTimeMillis()));
-//        notifyAndroidN(context, 19034+alarmObj.getAlarmId(), alarmObj.getTimeString(), ss);
         if(Math.abs( alarmTime - System.currentTimeMillis() ) <= 4500) {
-//        if(1==1){
             // build notification title
             String notificationTitle = "";
             if(alarmObj.getTitle().equals(""))
@@ -181,16 +174,9 @@ public class NotifyService extends BroadcastReceiver {
                 return -1;
             }
 
-//            System.out.println("Single norm "+ new java.text.SimpleDateFormat("h:mm a E, dd-MM-yyyy").format(alarmCalendar.getTime()));
-//            System.out.println(alarmCalendar.getTimeInMillis());
             notifyIntent.putExtra("timeInMillis", alarmCalendar.getTimeInMillis());
             PendingIntent pendingIntent = PendingIntent.getBroadcast (context, id, notifyIntent, PendingIntent.FLAG_UPDATE_CURRENT);
-//            if(isFromSystem){
-//                String s =new java.text.SimpleDateFormat("h:mm a E, dd-MM-yyyy").format(alarmCalendar.getTime());
-//                notifyAndroidN(context, 10102+alarmObj.getAlarmId(),s, pendingIntent.toString());
-//            }
-//            String d = "After "+Long.toString((alarmCalendar.getTimeInMillis() - System.currentTimeMillis()));
-//            notifyAndroidN(context, 7905+alarmObj.getAlarmId(), "setting alarm "+alarmObj.getTimeString(),d);
+
             alarmManager.setExact(AlarmManager.RTC_WAKEUP,  alarmCalendar.getTimeInMillis(), pendingIntent);
 
             shortestInterval = alarmCalendar.getTimeInMillis(); // set return value

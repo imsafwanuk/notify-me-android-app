@@ -174,7 +174,7 @@ public class StartupActivity extends AppCompatActivity implements MainAlarmFragm
 
         // Create a new Tab named
         TabLayout.Tab firstTab = startup_tabLayout.newTab();
-        firstTab.setText("Alarms");
+        firstTab.setText("Notifications");
         startup_tabLayout.addTab(firstTab);
 
         // Create a new Tab named

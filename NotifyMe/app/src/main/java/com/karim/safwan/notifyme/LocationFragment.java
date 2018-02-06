@@ -7,7 +7,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.Html;
-import android.text.InputFilter;
 import android.text.method.ScrollingMovementMethod;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -37,12 +36,6 @@ public class LocationFragment extends Fragment {
     HashMap<String, Boolean > isExpandedMap = new HashMap<String, Boolean >();
     TableLayout location_table;
     View view;
-    // demo purposes
-    boolean demoCollapse;
-    ImageView img1;
-    TableRow child_row, header_row;
-
-
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -167,7 +160,11 @@ public class LocationFragment extends Fragment {
             isExpandedMap.put(s,false);
     }
 
-
+    /**
+     * Function: This controls which row is to be expanded and contracted.
+     * Stimuli: When a location row is pressed.
+     * Layout of header rows: TV/TV/ImgV
+     */
     protected void rowClickListener(TableRow trParent) {
         System.out.println("hit me harder!");
         TextView strTv = (TextView) trParent.getChildAt(0);

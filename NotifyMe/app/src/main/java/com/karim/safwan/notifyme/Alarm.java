@@ -255,22 +255,7 @@ public class Alarm implements Parcelable, Cloneable {
     }
 
 
-    /**
-     * Function: Sets alarm time in a Calender object.
-     * Assumption: Hr, min is set through this method.
-     *             Day, Month and Year are set to the time when this method is called.
-     *             Also sets onDstTime to true if time was saved on DST time.
-     * Stimuli: Called when alarm time is changed.
-     */
-//    public void setAlarmTime(int nHr, int nMin) {
-//        Calendar ca = Calendar.getInstance();
-//        ca.set(Calendar.HOUR_OF_DAY, nHr);
-//        ca.set(Calendar.MINUTE, nMin);
-//        this.alarmTime.setTimeInMillis(ca.getTimeInMillis());
-//        this.setOnDstTime();
-//    }
-
-    public void setAlarmTimeInMIllis(long time) {
+    public void setAlarmTimeInMillis(long time) {
         alarmTime.setTimeInMillis(time);
         alarmTime.set(Calendar.SECOND, 0);
     }
@@ -356,20 +341,14 @@ public class Alarm implements Parcelable, Cloneable {
         boolean nowOnDstTime = tz.inDaylightTime(ca.getTime());
         long convertTimeInMillies = tz.getOffset(ca.getTimeInMillis()) - tz.getOffset(this.getTimeMillis());
 
-//        System.out.println("In Alarm DST, id: " + this.alarmId + " "+ this.getTimeString() + " DST: " + this.isOnDstTime() + " current DST: "+ nowOnDstTime+" Time in milli: "+convertTimeInMillies);
-//        System.out.println(tz.getOffset(this.getTimeMillis()));
-//        System.out.println(tz.getOffset(ca.getTimeInMillis()));
-
         if(this.isChangeWithDayLightSavings() && nowOnDstTime != this.isOnDstTime()) {
             // add convertTimeInMillies to current time
             if(nowOnDstTime) {
                 this.alarmTime.setTimeInMillis(alarmTime.getTimeInMillis() + tz.getDSTSavings() );
-//                System.out.println("now DST "+ this.getTimeString());
             }
             else {
                 // subtract convertTimeInMillies to current time
                 this.alarmTime.setTimeInMillis(alarmTime.getTimeInMillis() - tz.getDSTSavings() );
-//                System.out.println("now DST` "+this.getTimeString());
             }
 
         }
